@@ -80,7 +80,7 @@ contract FrammTest is Test {
 
     function testTransferTokens(uint256 amount) public {
         uint256 snapStart = vm.snapshot();
-        vm.assume(amount > 0 && amount < 20);
+        vm.assume(amount > 0 && amount < 50);
         vm.startPrank(eve);
         uint256 sharesSupplyBefore = framm.sharesSupply(alice);
         uint256 buyPrice = friendtechShares.getBuyPriceAfterFee(alice, amount);
@@ -108,6 +108,56 @@ contract FrammTest is Test {
         vm.stopPrank();
         // bob can now sell the tokens
         vm.startPrank(bob);
+        uint256 bobBalanceBefore = bob.balance;
+        sharesSupplyBefore = framm.sharesSupply(alice);
+        uint256 sellPrice = friendtechShares.getSellPriceAfterFee(
+            alice,
+            amount
+        );
+        framm.sellShares(alice, amount);
+        require(
+            framm.sharesSupply(alice) == sharesSupplyBefore - amount,
+            "wrong shares balance"
+        );
+        require(aliceToken.balanceOf(bob) == 0, "wrong token balance");
+        require(
+            bob.balance - bobBalanceBefore == sellPrice,
+            "native balance after sell"
+        );
+        vm.stopPrank();
+        vm.revertTo(snapStart);
+    }
+
+    function testTransferFromTokens(uint256 amount) public {
+        uint256 snapStart = vm.snapshot();
+        vm.assume(amount > 0 && amount < 50);
+        vm.startPrank(eve);
+        uint256 sharesSupplyBefore = framm.sharesSupply(alice);
+        uint256 buyPrice = friendtechShares.getBuyPriceAfterFee(alice, amount);
+        framm.buyShares{value: buyPrice}(alice, amount);
+        require(
+            framm.sharesSupply(alice) == sharesSupplyBefore + amount,
+            "wrong shares balance"
+        );
+        sharesSupplyBefore = framm.sharesSupply(alice);
+        require(aliceToken.balanceOf(eve) == amount, "wrong token balance");
+        aliceToken.approve(bob, amount);
+        vm.stopPrank();
+
+        vm.startPrank(bob);
+        aliceToken.transferFrom(eve, bob, amount);
+        require(
+            framm.sharesSupply(alice) == sharesSupplyBefore,
+            "shares balance not equal after transfer"
+        );
+        require(
+            aliceToken.balanceOf(eve) == 0,
+            "wrong token balance after transfer"
+        );
+        require(
+            aliceToken.balanceOf(bob) == amount,
+            "wrong token balance after transfer"
+        );
         uint256 bobBalanceBefore = bob.balance;
         sharesSupplyBefore = framm.sharesSupply(alice);
         uint256 sellPrice = friendtechShares.getSellPriceAfterFee(
