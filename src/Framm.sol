@@ -10,6 +10,7 @@ import {IFriendTechSharesV1} from "./external/IFriendTechSharesV1.sol";
 contract Framm {
     using SafeTransferLib for address;
     address public friendtechSharesV1;
+    bool public locked;
     IFriendTechSharesV1 FTS;
 
     // Storage copied from IFriendTechSharesV1
@@ -40,6 +41,13 @@ contract Framm {
         _;
     }
 
+    modifier reentrancyLock() {
+        require(!locked, "UserToken: reentrant call");
+        locked = true;
+        _;
+        locked = false;
+    }
+
     function createToken(
         address sharesSubject,
         string memory name,
@@ -63,7 +71,10 @@ contract Framm {
         );
     }
 
-    function buyShares(address sharesSubject, uint256 amount) external payable {
+    function buyShares(
+        address sharesSubject,
+        uint256 amount
+    ) external payable reentrancyLock {
         require(
             sharesSubjectToToken[sharesSubject] != address(0),
             "Framm: token not created"
@@ -80,7 +91,10 @@ contract Framm {
         sharesSupply[sharesSubject] += amount;
     }
 
-    function sellShares(address sharesSubject, uint256 amount) external {
+    function sellShares(
+        address sharesSubject,
+        uint256 amount
+    ) external reentrancyLock {
         require(
             sharesSubjectToToken[sharesSubject] != address(0),
             "Framm: token not created"
