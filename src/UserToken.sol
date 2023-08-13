@@ -5,6 +5,8 @@ import {ERC20} from "solmate/src/tokens/ERC20.sol";
 import {IFramm} from "./interfaces/IFramm.sol";
 
 contract UserToken is ERC20 {
+    string public constant NAME_PREFIX = "UserToken: ";
+    string public constant SYMBOL_PREFIX = "ut";
     address public minter;
     event NameSymbolChanged(string name, string symbol);
 
@@ -16,7 +18,13 @@ contract UserToken is ERC20 {
     constructor(
         string memory _name,
         string memory _symbol
-    ) ERC20(_name, _symbol, 18) {
+    )
+        ERC20(
+            string(abi.encodePacked(NAME_PREFIX, _name)),
+            string(abi.encodePacked(SYMBOL_PREFIX, _symbol)),
+            18
+        )
+    {
         minter = msg.sender;
     }
 
@@ -36,8 +44,8 @@ contract UserToken is ERC20 {
         string memory _name,
         string memory _symbol
     ) external onlyMinter {
-        name = _name;
-        symbol = _symbol;
+        name = string(abi.encodePacked(NAME_PREFIX, _name));
+        symbol = string(abi.encodePacked(SYMBOL_PREFIX, _symbol));
         emit NameSymbolChanged(name, symbol);
     }
 }

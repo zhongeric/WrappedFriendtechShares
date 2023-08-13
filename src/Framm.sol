@@ -6,7 +6,7 @@ import {UserToken} from "./UserToken.sol";
 import {IUserToken} from "./interfaces/IUserToken.sol";
 import {IFriendTechSharesV1} from "./external/IFriendTechSharesV1.sol";
 
-// AMM built ontop of friends.tech
+/// ERC20 Token Issuer built ontop of friends.tech
 contract Framm {
     using SafeTransferLib for address;
     address public friendtechSharesV1;
