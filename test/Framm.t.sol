@@ -105,7 +105,11 @@ contract FrammTest is Test {
             aliceToken.balanceOf(bob) == amount,
             "wrong token balance after transfer"
         );
+        // eve cannot sell the tokens
+        vm.expectRevert("Framm: not enough tokens");
+        framm.sellShares(alice, amount);
         vm.stopPrank();
+
         // bob can now sell the tokens
         vm.startPrank(bob);
         uint256 bobBalanceBefore = bob.balance;
@@ -144,8 +148,14 @@ contract FrammTest is Test {
         aliceToken.approve(bob, amount);
         vm.stopPrank();
 
-        vm.startPrank(bob);
+        vm.prank(bob);
         aliceToken.transferFrom(eve, bob, amount);
+        // eve cannot sell the tokens
+        vm.prank(eve);
+        vm.expectRevert("Framm: not enough tokens");
+        framm.sellShares(alice, amount);
+
+        vm.startPrank(bob);
         require(
             framm.sharesSupply(alice) == sharesSupplyBefore,
             "shares balance not equal after transfer"

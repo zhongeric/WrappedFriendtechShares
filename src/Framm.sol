@@ -89,6 +89,13 @@ contract Framm {
             amount <= sharesSupply[sharesSubject],
             "Framm: not enough shares"
         );
+        require(
+            IUserToken(sharesSubjectToToken[sharesSubject]).balanceOf(
+                msg.sender
+            ) >= amount,
+            "Framm: not enough tokens"
+        );
+
         sharesSupply[sharesSubject] -= amount;
         uint256 amountOwed = FTS.getSellPriceAfterFee(sharesSubject, amount);
         FTS.sellShares(sharesSubject, amount);
