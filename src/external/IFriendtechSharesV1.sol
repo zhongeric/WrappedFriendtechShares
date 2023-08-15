@@ -7,33 +7,15 @@ abstract contract IFriendTechSharesV1 {
 
     function subjectFeePercent() external virtual;
 
-    function getBuyPrice(
-        address sharesSubject,
-        uint256 amount
-    ) external view virtual returns (uint256);
+    function getBuyPrice(address sharesSubject, uint256 amount) external view virtual returns (uint256);
 
-    function getBuyPriceAfterFee(
-        address sharesSubject,
-        uint256 amount
-    ) external view virtual returns (uint256);
+    function getBuyPriceAfterFee(address sharesSubject, uint256 amount) external view virtual returns (uint256);
 
-    function getSellPriceAfterFee(
-        address sharesSubject,
-        uint256 amount
-    ) external view virtual returns (uint256);
+    function getSellPriceAfterFee(address sharesSubject, uint256 amount) external view virtual returns (uint256);
 
-    function getSellPrice(
-        address sharesSubject,
-        uint256 amount
-    ) external view virtual returns (uint256);
+    function getSellPrice(address sharesSubject, uint256 amount) external view virtual returns (uint256);
 
-    function buyShares(
-        address sharesSubject,
-        uint256 amount
-    ) external payable virtual;
+    function buyShares(address sharesSubject, uint256 amount) external payable virtual;
 
-    function sellShares(
-        address sharesSubject,
-        uint256 amount
-    ) external payable virtual;
+    function sellShares(address sharesSubject, uint256 amount) external payable virtual;
 }

@@ -6,9 +6,9 @@ import {ERC1155} from "solmate/src/tokens/ERC1155.sol";
 import {IWrappedFriendtechSharesFactory} from "./interfaces/IWrappedFriendtechSharesFactory.sol";
 import {IFriendTechSharesV1} from "./external/IFriendTechSharesV1.sol";
 
-/// @title ERC1155 Token Issuer built ontop of friends.tech 
+/// @title ERC1155 Token Issuer built ontop of friends.tech
 /// @author Eric Zhong
-/// Holds an internal balance and mints / burns tokens 
+/// Holds an internal balance and mints / burns tokens
 /// @notice No fee on transfer but minting / burning are subject to fees set in friendTechSharesV1 contract
 contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1155 {
     using SafeTransferLib for address;
@@ -21,17 +21,9 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
 
     IFriendTechSharesV1 FTS;
 
-    event ShareSubjectCreated(
-        address indexed sharesSubject,
-        uint256 indexed tokenId
-    );
-    event BaseURIChanged(
-        string indexed baseURI
-    );
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
+    event ShareSubjectCreated(address indexed sharesSubject, uint256 indexed tokenId);
+    event BaseURIChanged(string indexed baseURI);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     // Storage copied from IFriendTechSharesV1
     // SharesSubject => Supply
@@ -63,10 +55,7 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
     /// @param sharesSubject The address of the shares subject
     /// @return id The token id corresponding to the shares subject
     function createToken(address sharesSubject) external returns (uint256 id) {
-        require(
-            subjectToTokenId[sharesSubject] == 0,
-            "WrappedFriendtechSharesFactory: token already exists"
-        );
+        require(subjectToTokenId[sharesSubject] == 0, "WrappedFriendtechSharesFactory: token already exists");
         lastId += 1;
         subjectToTokenId[sharesSubject] = lastId;
         tokenIdToSubject[lastId] = sharesSubject;
@@ -79,25 +68,14 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
     /// @dev You must send msg.value greater than the getBuyPriceAfterFee
     /// @param sharesSubject The address of the shares subject
     /// @param amount The amount of shares to buy
-    function buyShares(
-        address sharesSubject,
-        uint256 amount
-    ) external payable reentrancyLock {
-        require(
-            subjectToTokenId[sharesSubject] != 0,
-            "WrappedFriendtechSharesFactory: token not created"
-        );
+    function buyShares(address sharesSubject, uint256 amount) external payable reentrancyLock {
+        require(subjectToTokenId[sharesSubject] != 0, "WrappedFriendtechSharesFactory: token not created");
         require(
             msg.value >= FTS.getBuyPriceAfterFee(sharesSubject, amount),
             "WrappedFriendtechSharesFactory: not enough for buy"
         );
         FTS.buyShares{value: msg.value}(sharesSubject, amount);
-        _mint(
-            msg.sender,
-            subjectToTokenId[sharesSubject],
-            amount,
-            ""
-        );
+        _mint(msg.sender, subjectToTokenId[sharesSubject], amount, "");
         sharesSupply[sharesSubject] += amount;
     }
 
@@ -105,32 +83,18 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
     /// @notice this is subject to the set fee in the friendTechSharesV1 contract
     /// @param sharesSubject The address of the shares subject
     /// @param amount The amount of shares to sell
-    function sellShares(
-        address sharesSubject,
-        uint256 amount
-    ) external reentrancyLock {
+    function sellShares(address sharesSubject, uint256 amount) external reentrancyLock {
+        require(subjectToTokenId[sharesSubject] != 0, "WrappedFriendtechSharesFactory: token not created");
+        require(amount <= sharesSupply[sharesSubject], "WrappedFriendtechSharesFactory: not enough shares");
         require(
-            subjectToTokenId[sharesSubject] != 0,
-            "WrappedFriendtechSharesFactory: token not created"
-        );
-        require(
-            amount <= sharesSupply[sharesSubject],
-            "WrappedFriendtechSharesFactory: not enough shares"
-        );
-        require(
-            balanceOf[msg.sender][subjectToTokenId[sharesSubject]] >=
-                amount,
+            balanceOf[msg.sender][subjectToTokenId[sharesSubject]] >= amount,
             "WrappedFriendtechSharesFactory: not enough tokens"
         );
 
         sharesSupply[sharesSubject] -= amount;
         uint256 amountOwed = FTS.getSellPriceAfterFee(sharesSubject, amount);
         FTS.sellShares(sharesSubject, amount);
-        _burn(
-            msg.sender,
-            subjectToTokenId[sharesSubject],
-            amount
-        );
+        _burn(msg.sender, subjectToTokenId[sharesSubject], amount);
         msg.sender.safeTransferETH(amountOwed);
     }
 

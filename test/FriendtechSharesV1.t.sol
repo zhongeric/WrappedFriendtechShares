@@ -1,9 +1,8 @@
 /**
- *Submitted for verification at basescan.org on 2023-08-10
-*/
+ * Submitted for verification at basescan.org on 2023-08-10
+ */
 
 // File: contracts/Context.sol
-
 
 // OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
 
@@ -31,11 +30,9 @@ abstract contract Context {
 
 // File: contracts/Ownable.sol
 
-
 // OpenZeppelin Contracts (last updated v4.7.0) (access/Ownable.sol)
 
 pragma solidity ^0.8.0;
-
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where
@@ -116,19 +113,25 @@ abstract contract Ownable is Context {
 
 // File: contracts/FriendtechShares.sol
 
-
-
 pragma solidity >=0.8.2 <0.9.0;
 
-
-// TODO: Events, final pricing model, 
+// TODO: Events, final pricing model,
 
 contract FriendtechSharesV1 is Ownable {
     address public protocolFeeDestination;
     uint256 public protocolFeePercent;
     uint256 public subjectFeePercent;
 
-    event Trade(address trader, address subject, bool isBuy, uint256 shareAmount, uint256 ethAmount, uint256 protocolEthAmount, uint256 subjectEthAmount, uint256 supply);
+    event Trade(
+        address trader,
+        address subject,
+        bool isBuy,
+        uint256 shareAmount,
+        uint256 ethAmount,
+        uint256 protocolEthAmount,
+        uint256 subjectEthAmount,
+        uint256 supply
+    );
 
     // SharesSubject => (Holder => Balance)
     mapping(address => mapping(address => uint256)) public sharesBalance;
@@ -149,8 +152,10 @@ contract FriendtechSharesV1 is Ownable {
     }
 
     function getPrice(uint256 supply, uint256 amount) public pure returns (uint256) {
-        uint256 sum1 = supply == 0 ? 0 : (supply - 1 )* (supply) * (2 * (supply - 1) + 1) / 6;
-        uint256 sum2 = supply == 0 && amount == 1 ? 0 : (supply - 1 + amount) * (supply + amount) * (2 * (supply - 1 + amount) + 1) / 6;
+        uint256 sum1 = supply == 0 ? 0 : (supply - 1) * (supply) * (2 * (supply - 1) + 1) / 6;
+        uint256 sum2 = supply == 0 && amount == 1
+            ? 0
+            : (supply - 1 + amount) * (supply + amount) * (2 * (supply - 1 + amount) + 1) / 6;
         uint256 summation = sum2 - sum1;
         return summation * 1 ether / 16000;
     }
@@ -187,8 +192,8 @@ contract FriendtechSharesV1 is Ownable {
         sharesBalance[sharesSubject][msg.sender] = sharesBalance[sharesSubject][msg.sender] + amount;
         sharesSupply[sharesSubject] = supply + amount;
         emit Trade(msg.sender, sharesSubject, true, amount, price, protocolFee, subjectFee, supply + amount);
-        (bool success1, ) = protocolFeeDestination.call{value: protocolFee}("");
-        (bool success2, ) = sharesSubject.call{value: subjectFee}("");
+        (bool success1,) = protocolFeeDestination.call{value: protocolFee}("");
+        (bool success2,) = sharesSubject.call{value: subjectFee}("");
         require(success1 && success2, "Unable to send funds");
     }
 
@@ -202,9 +207,9 @@ contract FriendtechSharesV1 is Ownable {
         sharesBalance[sharesSubject][msg.sender] = sharesBalance[sharesSubject][msg.sender] - amount;
         sharesSupply[sharesSubject] = supply - amount;
         emit Trade(msg.sender, sharesSubject, false, amount, price, protocolFee, subjectFee, supply - amount);
-        (bool success1, ) = msg.sender.call{value: price - protocolFee - subjectFee}("");
-        (bool success2, ) = protocolFeeDestination.call{value: protocolFee}("");
-        (bool success3, ) = sharesSubject.call{value: subjectFee}("");
+        (bool success1,) = msg.sender.call{value: price - protocolFee - subjectFee}("");
+        (bool success2,) = protocolFeeDestination.call{value: protocolFee}("");
+        (bool success3,) = sharesSubject.call{value: subjectFee}("");
         require(success1 && success2 && success3, "Unable to send funds");
     }
 }

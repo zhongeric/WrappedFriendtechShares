@@ -13,15 +13,9 @@ abstract contract DeployUniswapV3 is Test {
         bytes memory creationCode = UniswapV3Factory;
         address factoryAddress;
         assembly {
-            factoryAddress := create(
-                0,
-                add(creationCode, 32),
-                mload(creationCode)
-            )
+            factoryAddress := create(0, add(creationCode, 32), mload(creationCode))
 
-            if iszero(factoryAddress) {
-                revert(0, 0)
-            }
+            if iszero(factoryAddress) { revert(0, 0) }
         }
         factory = IUniswapV3Factory(factoryAddress);
     }
