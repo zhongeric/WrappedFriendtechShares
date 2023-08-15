@@ -3,23 +3,28 @@ pragma solidity >0.8.0;
 
 import {SafeTransferLib} from "solmate/src/utils/SafeTransferLib.sol";
 import {ERC1155} from "solmate/src/tokens/ERC1155.sol";
-import {IWrappedFTS} from "./interfaces/IWrappedFTS.sol";
+import {IWrappedFriendtechSharesFactory} from "./interfaces/IWrappedFriendtechSharesFactory.sol";
 import {IFriendTechSharesV1} from "./external/IFriendTechSharesV1.sol";
 
 /// ERC1155 Token Issuer built ontop of friends.tech
-contract WrappedFriendtechSharesFactory is ERC1155 {
+contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1155 {
     using SafeTransferLib for address;
 
+    string public baseURI = "";
+    address public owner;
     address public friendtechSharesV1;
     bool public locked;
 
     IFriendTechSharesV1 FTS;
 
-    uint256 public numSubjects = 0;
+    uint256 public lastId = 0;
 
     event ShareSubjectCreated(
         address indexed sharesSubject,
         uint256 indexed tokenId
+    );
+    event BaseURIChanged(
+        string indexed baseURI
     );
 
     // Storage copied from IFriendTechSharesV1
@@ -29,25 +34,29 @@ contract WrappedFriendtechSharesFactory is ERC1155 {
     mapping(address => uint256) public subjectToTokenId;
     mapping(uint256 => address) public tokenIdToSubject;
 
+    // Only used for URI updating
+    modifier onlyOwner() {
+        require(msg.sender == owner, "WrappedFriendtechSharesFactory: not owner");
+        _;
+    }
+
     constructor(address _friendtechSharesV1) {
+        owner = msg.sender;
         friendtechSharesV1 = _friendtechSharesV1;
         FTS = IFriendTechSharesV1(friendtechSharesV1);
     }
 
     function uri(uint256 id) public view override returns (string memory) {
-        return "";
+        return string(abi.encodePacked(baseURI, tokenIdToSubject[id]));
     }
 
-    modifier onlyInitializedSharesSubject() {
-        require(
-            subjectToTokenId[msg.sender] != 0,
-            "WrappedFriendtechSharesFactory: not shares subject"
-        );
-        _;
+    function setBaseURI(string memory _baseURI) public onlyOwner {
+        baseURI = _baseURI;
+        emit BaseURIChanged(baseURI);
     }
 
     modifier reentrancyLock() {
-        require(!locked, "WrappedFTS: reentrant call");
+        require(!locked, "WrappedFriendtechSharesFactory: reentrant call");
         locked = true;
         _;
         locked = false;
@@ -58,11 +67,11 @@ contract WrappedFriendtechSharesFactory is ERC1155 {
             subjectToTokenId[sharesSubject] == 0,
             "WrappedFriendtechSharesFactory: token already exists"
         );
-        numSubjects += 1;
-        subjectToTokenId[sharesSubject] = numSubjects;
-        tokenIdToSubject[numSubjects] = sharesSubject;
-        emit ShareSubjectCreated(sharesSubject, numSubjects);
-        return numSubjects;
+        lastId += 1;
+        subjectToTokenId[sharesSubject] = lastId;
+        tokenIdToSubject[lastId] = sharesSubject;
+        emit ShareSubjectCreated(sharesSubject, lastId);
+        return lastId;
     }
 
     function buyShares(

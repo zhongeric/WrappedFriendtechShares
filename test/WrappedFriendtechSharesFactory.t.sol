@@ -2,7 +2,6 @@
 pragma solidity >0.8.0;
 
 import {Test} from "forge-std/Test.sol";
-import {console} from "forge-std/console.sol";
 import {WrappedFriendtechSharesFactory} from "../src/WrappedFriendtechSharesFactory.sol";
 import {FriendtechSharesV1} from "./FriendtechSharesV1.t.sol";
 
@@ -61,8 +60,12 @@ contract WrappedFriendtechSharesFactoryTest is Test {
             return;
         }
         uint256 sharesSupply = wFTSFactory.sharesSupply(alice);
+        assertLe(
+            wFTSFactory.balanceOf(eve, aliceTokenId),
+            sharesSupply,
+            "balance of eve not le to sharesSupply"
+        );
         uint256 amount = wFTSFactory.balanceOf(eve, aliceTokenId);
-        uint256 sellPrice = friendtechShares.getSellPriceAfterFee(alice, amount);
         vm.prank(eve);
         wFTSFactory.sellShares(alice, amount);
     }
