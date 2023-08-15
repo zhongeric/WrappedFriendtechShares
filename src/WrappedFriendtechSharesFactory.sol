@@ -9,12 +9,12 @@ import {IFriendTechSharesV1} from "./external/IFriendTechSharesV1.sol";
 /// @title ERC1155 Token Issuer built ontop of friends.tech
 /// @author Eric Zhong
 /// Holds an internal balance and mints / burns tokens
+/// @dev No owner, no permissioned functions
 /// @notice No fee on transfer but minting / burning are subject to fees set in friendTechSharesV1 contract
 contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1155 {
     using SafeTransferLib for address;
 
     string public baseURI = "";
-    address public owner;
     address public friendtechSharesV1;
     uint256 public lastId = 0;
     bool public locked;
@@ -22,7 +22,7 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
     IFriendTechSharesV1 FTS;
 
     event ShareSubjectCreated(address indexed sharesSubject, uint256 indexed tokenId);
-    event BaseURIChanged(string indexed baseURI);
+    event URIChanged(uint256 indexed id, string uri);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     // Storage copied from IFriendTechSharesV1
@@ -31,15 +31,9 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
     // WrappedFriendtechSharesFactory storage
     mapping(address => uint256) public subjectToTokenId;
     mapping(uint256 => address) public tokenIdToSubject;
-
-    // Only used for URI updating
-    modifier onlyOwner() {
-        require(msg.sender == owner, "WrappedFriendtechSharesFactory: not owner");
-        _;
-    }
+    mapping(uint256 => string) public tokenURIs;
 
     constructor(address _friendtechSharesV1) {
-        owner = msg.sender;
         friendtechSharesV1 = _friendtechSharesV1;
         FTS = IFriendTechSharesV1(friendtechSharesV1);
     }
@@ -99,17 +93,13 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
     }
 
     function uri(uint256 id) public view override returns (string memory) {
-        return string(abi.encodePacked(baseURI, tokenIdToSubject[id]));
+        return tokenURIs[id];
     }
 
-    function setBaseURI(string memory _baseURI) public onlyOwner {
-        baseURI = _baseURI;
-        emit BaseURIChanged(baseURI);
-    }
-
-    function transferOwnership(address newOwner) public onlyOwner {
-        emit OwnershipTransferred(owner, newOwner);
-        owner = newOwner;
+    function setURI(uint256 id, string memory _uri) public {
+        require(msg.sender == tokenIdToSubject[id], "WrappedFriendtechSharesFactory: not shares subject of token");
+        tokenURIs[id] = _uri;
+        emit URIChanged(id, tokenURIs[id]);
     }
 
     receive() external payable {}
