@@ -60,6 +60,9 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
         locked = false;
     }
 
+    /// @notice Creates a new token id for a shares subject
+    /// @param sharesSubject The address of the shares subject
+    /// @return id The token id corresponding to the shares subject
     function createToken(address sharesSubject) external returns (uint256 id) {
         require(
             subjectToTokenId[sharesSubject] == 0,
@@ -72,6 +75,11 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
         return lastId;
     }
 
+    /// @notice Buy shares in sharesSubject on friendsTech
+    /// @notice this is subject to the set fee in the friendTechSharesV1 contract
+    /// @dev You must send msg.value greater than the getBuyPriceAfterFee
+    /// @param sharesSubject The address of the shares subject
+    /// @param amount The amount of shares to buy
     function buyShares(
         address sharesSubject,
         uint256 amount
@@ -81,7 +89,7 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
             "WrappedFriendtechSharesFactory: token not created"
         );
         require(
-            msg.value >= FTS.getBuyPrice(sharesSubject, amount),
+            msg.value >= FTS.getBuyPriceAfterFee(sharesSubject, amount),
             "WrappedFriendtechSharesFactory: not enough for buy"
         );
         FTS.buyShares{value: msg.value}(sharesSubject, amount);
@@ -94,6 +102,10 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
         sharesSupply[sharesSubject] += amount;
     }
 
+    /// @notice Sell shares in sharesSubject on friendsTech
+    /// @notice this is subject to the set fee in the friendTechSharesV1 contract
+    /// @param sharesSubject The address of the shares subject
+    /// @param amount The amount of shares to sell
     function sellShares(
         address sharesSubject,
         uint256 amount
