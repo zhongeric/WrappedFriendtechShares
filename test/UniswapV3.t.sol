@@ -6,13 +6,13 @@
 // import {Test} from "forge-std/Test.sol";
 // import {console} from "forge-std/console.sol";
 // import {DeployUniswapV3} from "./DeployUniswapV3.t.sol";
-// import {FrammTest} from "./Framm.t.sol";
+// import {WrappedFriendtechSharesFactoryTest} from "./WrappedFriendtechSharesFactory.t.sol";
 
-// contract UniswapV3Test is DeployUniswapV3, FrammTest {
+// contract UniswapV3Test is DeployUniswapV3, WrappedFriendtechSharesFactoryTest {
 //     address public aliceTokenBobTokenPool;
 
-//     function setUp() public override(DeployUniswapV3, FrammTest) {
-//         FrammTest.setUp();
+//     function setUp() public override(DeployUniswapV3, WrappedFriendtechSharesFactoryTest) {
+//         WrappedFriendtechSharesFactoryTest.setUp();
 //         DeployUniswapV3.setUp();
 //         // create pool with alice token, bob token
 //         aliceTokenBobTokenPool = factory.createPool(
@@ -29,26 +29,26 @@
 
 //         // alice buys 100 alice and 100 bob tokens
 //         uint256 amountAlice = 100;
-//         uint256 sharesSupplyBefore = framm.sharesSupply(alice);
+//         uint256 sharesSupplyBefore = wFTSFactory.sharesSupply(alice);
 //         uint256 buyPrice = friendtechShares.getBuyPriceAfterFee(
 //             alice,
 //             amountAlice
 //         );
 //         vm.prank(alice);
-//         framm.buyShares{value: buyPrice}(alice, amountAlice);
+//         wFTSFactory.buyShares{value: buyPrice}(alice, amountAlice);
 //         assertEq(
-//             framm.sharesSupply(alice),
+//             wFTSFactory.sharesSupply(alice),
 //             sharesSupplyBefore + amountAlice,
 //             "wrong shares balance"
 //         );
 
 //         uint256 amountBob = 100;
-//         sharesSupplyBefore = framm.sharesSupply(bob);
+//         sharesSupplyBefore = wFTSFactory.sharesSupply(bob);
 //         buyPrice = friendtechShares.getBuyPriceAfterFee(bob, amountBob);
 //         vm.prank(alice);
-//         framm.buyShares{value: buyPrice}(bob, amountBob);
+//         wFTSFactory.buyShares{value: buyPrice}(bob, amountBob);
 //         assertEq(
-//             framm.sharesSupply(bob),
+//             wFTSFactory.sharesSupply(bob),
 //             sharesSupplyBefore + amountBob,
 //             "wrong shares balance"
 //         );

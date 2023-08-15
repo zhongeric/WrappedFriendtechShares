@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {ERC1155} from "solmate/src/tokens/ERC1155.sol";
-import {IFramm} from "./interfaces/IFramm.sol";
+import {IWrappedFriendtechSharesFactory} from "./interfaces/IWrappedFriendtechSharesFactory.sol";
 
 contract WrappedFTS is ERC1155 {
     string public constant NAME_PREFIX = "WrappedFTS: ";

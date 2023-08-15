@@ -7,7 +7,7 @@ import {IWrappedFTS} from "./interfaces/IWrappedFTS.sol";
 import {IFriendTechSharesV1} from "./external/IFriendTechSharesV1.sol";
 
 /// ERC1155 Token Issuer built ontop of friends.tech
-contract Framm {
+contract WrappedFriendtechSharesFactory {
     using SafeTransferLib for address;
 
     address public friendtechSharesV1;
@@ -26,7 +26,7 @@ contract Framm {
     // Storage copied from IFriendTechSharesV1
     // SharesSubject => Supply
     mapping(address => uint256) public sharesSupply;
-    // Framm storage
+    // WrappedFriendtechSharesFactory storage
     mapping(address => uint256) public sharesSubjectToTokenId;
     mapping(uint256 => address) public tokenIdtoSharesSubject;
 
@@ -39,7 +39,7 @@ contract Framm {
     modifier onlyInitializedSharesSubject() {
         require(
             sharesSubjectToTokenId[msg.sender] != 0,
-            "Framm: not shares subject"
+            "WrappedFriendtechSharesFactory: not shares subject"
         );
         _;
     }
@@ -54,7 +54,7 @@ contract Framm {
     function createToken(address sharesSubject) external returns (uint256 id) {
         require(
             sharesSubjectToTokenId[sharesSubject] == 0,
-            "Framm: token already exists"
+            "WrappedFriendtechSharesFactory: token already exists"
         );
         numSubjects += 1;
         sharesSubjectToTokenId[sharesSubject] = numSubjects;
@@ -69,11 +69,11 @@ contract Framm {
     ) external payable reentrancyLock {
         require(
             sharesSubjectToTokenId[sharesSubject] != 0,
-            "Framm: token not created"
+            "WrappedFriendtechSharesFactory: token not created"
         );
         require(
             msg.value > FTS.getBuyPrice(sharesSubject, amount),
-            "Framm: not enough for buy"
+            "WrappedFriendtechSharesFactory: not enough for buy"
         );
         FTS.buyShares{value: msg.value}(sharesSubject, amount);
         wFTS.mint(
@@ -91,16 +91,16 @@ contract Framm {
     ) external reentrancyLock {
         require(
             sharesSubjectToTokenId[sharesSubject] != 0,
-            "Framm: token not created"
+            "WrappedFriendtechSharesFactory: token not created"
         );
         require(
             amount <= sharesSupply[sharesSubject],
-            "Framm: not enough shares"
+            "WrappedFriendtechSharesFactory: not enough shares"
         );
         require(
             wFTS.balanceOf(msg.sender, sharesSubjectToTokenId[sharesSubject]) >=
                 amount,
-            "Framm: not enough tokens"
+            "WrappedFriendtechSharesFactory: not enough tokens"
         );
 
         sharesSupply[sharesSubject] -= amount;
