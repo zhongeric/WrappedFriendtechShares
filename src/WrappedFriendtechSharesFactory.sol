@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity >0.8.0;
 
 import {SafeTransferLib} from "solmate/src/utils/SafeTransferLib.sol";
@@ -6,9 +6,10 @@ import {ERC1155} from "solmate/src/tokens/ERC1155.sol";
 import {IWrappedFriendtechSharesFactory} from "./interfaces/IWrappedFriendtechSharesFactory.sol";
 import {IFriendTechSharesV1} from "./external/IFriendTechSharesV1.sol";
 
-/// ERC1155 Token Issuer built ontop of friends.tech 
+/// @title ERC1155 Token Issuer built ontop of friends.tech 
+/// @author Eric Zhong
 /// Holds an internal balance and mints / burns tokens 
-/// No fee on transfer but minting / burning are subject to fees set in friendTechSharesV1 contract
+/// @notice No fee on transfer but minting / burning are subject to fees set in friendTechSharesV1 contract
 contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1155 {
     using SafeTransferLib for address;
 
