@@ -1,0 +1,5 @@
+WrappedFriendtechSharesFactoryTest:invariant_alwaysRedeemable() (runs: 256, calls: 3840, reverts: 3322)
+WrappedFriendtechSharesFactoryTest:invariant_leShareSupply() (runs: 256, calls: 3840, reverts: 3322)
+WrappedFriendtechSharesFactoryTest:testBuyAndSellShares(uint8) (runs: 256, μ: 178611, ~: 192809)
+WrappedFriendtechSharesFactoryTest:testTransferFromTokens() (gas: 244356)
+WrappedFriendtechSharesFactoryTest:testTransferTokens(uint8) (runs: 256, μ: 229086, ~: 229086)
