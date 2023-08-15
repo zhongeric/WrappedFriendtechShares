@@ -16,11 +16,10 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
     string public baseURI = "";
     address public owner;
     address public friendtechSharesV1;
+    uint256 public lastId = 0;
     bool public locked;
 
     IFriendTechSharesV1 FTS;
-
-    uint256 public lastId = 0;
 
     event ShareSubjectCreated(
         address indexed sharesSubject,
