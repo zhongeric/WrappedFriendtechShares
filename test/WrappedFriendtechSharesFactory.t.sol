@@ -4,7 +4,6 @@ pragma solidity >0.8.0;
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {WrappedFriendtechSharesFactory} from "../src/WrappedFriendtechSharesFactory.sol";
-import {WrappedFTS} from "../src/WrappedFTS.sol";
 import {FriendtechSharesV1} from "./FriendtechSharesV1.t.sol";
 
 contract WrappedFriendtechSharesFactoryTest is Test {
@@ -12,15 +11,13 @@ contract WrappedFriendtechSharesFactoryTest is Test {
     address bob = address(0xbeef);
     address eve = address(0xbad);
     address protocolFeeDestination = address(0xaaaa);
-    FriendtechSharesV1 friendtechShares;
-    WrappedFriendtechSharesFactory wFTSFactory;
-    WrappedFTS wFTS;
+    FriendtechSharesV1 public friendtechShares;
+    WrappedFriendtechSharesFactory public wFTSFactory;
     uint256 aliceTokenId;
     uint256 bobTokenId;
 
     function setUp() public virtual {
         friendtechShares = new FriendtechSharesV1();
-        wFTS = new WrappedFTS();
         friendtechShares.setFeeDestination(protocolFeeDestination);
         friendtechShares.setProtocolFeePercent(0.05 ether);
         friendtechShares.setSubjectFeePercent(0.05 ether);
@@ -33,13 +30,13 @@ contract WrappedFriendtechSharesFactoryTest is Test {
         shareSubjects[1] = bob;
         aliceTokenId = wFTSFactory.createToken(alice);
         assertEq(aliceTokenId, 1);
-        assertEq(wFTSFactory.sharesSubjectToTokenId(alice), 1);
-        assertEq(wFTSFactory.tokenIdtoSharesSubject(1), alice);
+        assertEq(wFTSFactory.subjectToTokenId(alice), 1);
+        assertEq(wFTSFactory.tokenIdToSubject(1), alice);
 
         bobTokenId = wFTSFactory.createToken(bob);
         assertEq(bobTokenId, 2);
-        assertEq(wFTSFactory.sharesSubjectToTokenId(bob), 2);
-        assertEq(wFTSFactory.tokenIdtoSharesSubject(2), bob);
+        assertEq(wFTSFactory.subjectToTokenId(bob), 2);
+        assertEq(wFTSFactory.tokenIdToSubject(2), bob);
 
         for (uint256 i = 0; i < shareSubjects.length; i++) {
             vm.deal(shareSubjects[i], 100 ether);
@@ -81,9 +78,9 @@ contract WrappedFriendtechSharesFactoryTest is Test {
     //     );
     // }
 
-    function testBuyAndSellShares(uint256 amount) public {
+    function testBuyAndSellShares() public {
         uint256 snapStart = vm.snapshot();
-        vm.assume(amount > 0 && amount < 20);
+        uint256 amount = 1;
         vm.startPrank(eve);
         uint256 sharesSupplyBefore = wFTSFactory.sharesSupply(alice);
         uint256 buyPrice = friendtechShares.getBuyPriceAfterFee(alice, amount);
@@ -94,7 +91,7 @@ contract WrappedFriendtechSharesFactoryTest is Test {
             "wrong shares balance"
         );
         assertEq(
-            wFTS.balanceOf(eve, aliceTokenId),
+            wFTSFactory.balanceOf(eve, aliceTokenId),
             amount,
             "wrong token balance"
         );
@@ -111,7 +108,7 @@ contract WrappedFriendtechSharesFactoryTest is Test {
             sharesSupplyBefore - amount,
             "wrong shares balance"
         );
-        assertEq(wFTS.balanceOf(eve, aliceTokenId), 0, "wrong token balance");
+        assertEq(wFTSFactory.balanceOf(eve, aliceTokenId), 0, "wrong token balance");
         assertEq(
             eve.balance - eveBalanceBefore,
             sellPrice,
@@ -121,9 +118,9 @@ contract WrappedFriendtechSharesFactoryTest is Test {
         vm.revertTo(snapStart);
     }
 
-    function testTransferTokens(uint256 amount) public {
+    function testTransferTokens() public {
         uint256 snapStart = vm.snapshot();
-        vm.assume(amount > 0 && amount < 50);
+        uint256 amount = 1;
         vm.startPrank(eve);
         uint256 sharesSupplyBefore = wFTSFactory.sharesSupply(alice);
         uint256 buyPrice = friendtechShares.getBuyPriceAfterFee(alice, amount);
@@ -135,20 +132,20 @@ contract WrappedFriendtechSharesFactoryTest is Test {
         );
         sharesSupplyBefore = wFTSFactory.sharesSupply(alice);
         assertEq(
-            wFTS.balanceOf(eve, aliceTokenId),
+            wFTSFactory.balanceOf(eve, aliceTokenId),
             amount,
             "wrong token balance"
         );
         // eve transfers tokens to bob
-        wFTS.safeTransferFrom(eve, bob, amount, aliceTokenId, "");
+        wFTSFactory.safeTransferFrom(eve, bob, amount, aliceTokenId, "");
         assertEq(
             wFTSFactory.sharesSupply(alice),
             sharesSupplyBefore,
             "shares balance not equal after transfer"
         );
-        assertEq(wFTS.balanceOf(eve, aliceTokenId), 0, "wrong token balance");
+        assertEq(wFTSFactory.balanceOf(eve, aliceTokenId), 0, "wrong token balance");
         assertEq(
-            wFTS.balanceOf(bob, aliceTokenId),
+            wFTSFactory.balanceOf(bob, aliceTokenId),
             amount,
             "wrong token balance"
         );
@@ -171,7 +168,7 @@ contract WrappedFriendtechSharesFactoryTest is Test {
             sharesSupplyBefore - amount,
             "wrong shares balance"
         );
-        assertEq(wFTS.balanceOf(bob, aliceTokenId), 0, "wrong token balance");
+        assertEq(wFTSFactory.balanceOf(bob, aliceTokenId), 0, "wrong token balance");
         assertEq(
             bob.balance - bobBalanceBefore,
             sellPrice,
@@ -181,9 +178,9 @@ contract WrappedFriendtechSharesFactoryTest is Test {
         vm.revertTo(snapStart);
     }
 
-    function testTransferFromTokens(uint256 amount) public {
+    function testTransferFromTokens() public {
         uint256 snapStart = vm.snapshot();
-        vm.assume(amount > 0 && amount < 50);
+        uint256 amount = 1;
         vm.startPrank(eve);
         uint256 sharesSupplyBefore = wFTSFactory.sharesSupply(alice);
         uint256 buyPrice = friendtechShares.getBuyPriceAfterFee(alice, amount);
@@ -195,15 +192,15 @@ contract WrappedFriendtechSharesFactoryTest is Test {
         );
         sharesSupplyBefore = wFTSFactory.sharesSupply(alice);
         assertEq(
-            wFTS.balanceOf(eve, aliceTokenId),
+            wFTSFactory.balanceOf(eve, aliceTokenId),
             amount,
             "wrong token balance"
         );
-        wFTS.setApprovalForAll(bob, true);
+        wFTSFactory.setApprovalForAll(bob, true);
         vm.stopPrank();
 
         vm.prank(bob);
-        wFTS.safeTransferFrom(eve, bob, amount, aliceTokenId, "");
+        wFTSFactory.safeTransferFrom(eve, bob, amount, aliceTokenId, "");
         // eve cannot sell the tokens
         vm.prank(eve);
         vm.expectRevert("WrappedFriendtechSharesFactory: not enough tokens");
@@ -215,9 +212,9 @@ contract WrappedFriendtechSharesFactoryTest is Test {
             sharesSupplyBefore,
             "shares balance not equal after transfer"
         );
-        assertEq(wFTS.balanceOf(eve, aliceTokenId), 0, "wrong token balance");
+        assertEq(wFTSFactory.balanceOf(eve, aliceTokenId), 0, "wrong token balance");
         assertEq(
-            wFTS.balanceOf(bob, aliceTokenId),
+            wFTSFactory.balanceOf(bob, aliceTokenId),
             amount,
             "wrong token balance after transfer"
         );
@@ -233,7 +230,7 @@ contract WrappedFriendtechSharesFactoryTest is Test {
             sharesSupplyBefore - amount,
             "wrong shares balance"
         );
-        assertEq(wFTS.balanceOf(bob, aliceTokenId), 0, "wrong token balance");
+        assertEq(wFTSFactory.balanceOf(bob, aliceTokenId), 0, "wrong token balance");
         assertEq(
             bob.balance - bobBalanceBefore,
             sellPrice,

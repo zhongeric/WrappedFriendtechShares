@@ -2,18 +2,17 @@
 pragma solidity >0.8.0;
 
 import {SafeTransferLib} from "solmate/src/utils/SafeTransferLib.sol";
-import {WrappedFTS} from "./WrappedFTS.sol";
+import {ERC1155} from "solmate/src/tokens/ERC1155.sol";
 import {IWrappedFTS} from "./interfaces/IWrappedFTS.sol";
 import {IFriendTechSharesV1} from "./external/IFriendTechSharesV1.sol";
 
 /// ERC1155 Token Issuer built ontop of friends.tech
-contract WrappedFriendtechSharesFactory {
+contract WrappedFriendtechSharesFactory is ERC1155 {
     using SafeTransferLib for address;
 
     address public friendtechSharesV1;
     bool public locked;
 
-    WrappedFTS public wFTS;
     IFriendTechSharesV1 FTS;
 
     uint256 public numSubjects = 0;
@@ -27,18 +26,21 @@ contract WrappedFriendtechSharesFactory {
     // SharesSubject => Supply
     mapping(address => uint256) public sharesSupply;
     // WrappedFriendtechSharesFactory storage
-    mapping(address => uint256) public sharesSubjectToTokenId;
-    mapping(uint256 => address) public tokenIdtoSharesSubject;
+    mapping(address => uint256) public subjectToTokenId;
+    mapping(uint256 => address) public tokenIdToSubject;
 
     constructor(address _friendtechSharesV1) {
         friendtechSharesV1 = _friendtechSharesV1;
         FTS = IFriendTechSharesV1(friendtechSharesV1);
-        wFTS = new WrappedFTS();
+    }
+
+    function uri(uint256 id) public view override returns (string memory) {
+        return "";
     }
 
     modifier onlyInitializedSharesSubject() {
         require(
-            sharesSubjectToTokenId[msg.sender] != 0,
+            subjectToTokenId[msg.sender] != 0,
             "WrappedFriendtechSharesFactory: not shares subject"
         );
         _;
@@ -53,12 +55,12 @@ contract WrappedFriendtechSharesFactory {
 
     function createToken(address sharesSubject) external returns (uint256 id) {
         require(
-            sharesSubjectToTokenId[sharesSubject] == 0,
+            subjectToTokenId[sharesSubject] == 0,
             "WrappedFriendtechSharesFactory: token already exists"
         );
         numSubjects += 1;
-        sharesSubjectToTokenId[sharesSubject] = numSubjects;
-        tokenIdtoSharesSubject[numSubjects] = sharesSubject;
+        subjectToTokenId[sharesSubject] = numSubjects;
+        tokenIdToSubject[numSubjects] = sharesSubject;
         emit ShareSubjectCreated(sharesSubject, numSubjects);
         return numSubjects;
     }
@@ -68,7 +70,7 @@ contract WrappedFriendtechSharesFactory {
         uint256 amount
     ) external payable reentrancyLock {
         require(
-            sharesSubjectToTokenId[sharesSubject] != 0,
+            subjectToTokenId[sharesSubject] != 0,
             "WrappedFriendtechSharesFactory: token not created"
         );
         require(
@@ -76,9 +78,9 @@ contract WrappedFriendtechSharesFactory {
             "WrappedFriendtechSharesFactory: not enough for buy"
         );
         FTS.buyShares{value: msg.value}(sharesSubject, amount);
-        wFTS.mint(
+        _mint(
             msg.sender,
-            sharesSubjectToTokenId[sharesSubject],
+            subjectToTokenId[sharesSubject],
             amount,
             ""
         );
@@ -90,7 +92,7 @@ contract WrappedFriendtechSharesFactory {
         uint256 amount
     ) external reentrancyLock {
         require(
-            sharesSubjectToTokenId[sharesSubject] != 0,
+            subjectToTokenId[sharesSubject] != 0,
             "WrappedFriendtechSharesFactory: token not created"
         );
         require(
@@ -98,7 +100,7 @@ contract WrappedFriendtechSharesFactory {
             "WrappedFriendtechSharesFactory: not enough shares"
         );
         require(
-            wFTS.balanceOf(msg.sender, sharesSubjectToTokenId[sharesSubject]) >=
+            balanceOf[msg.sender][subjectToTokenId[sharesSubject]] >=
                 amount,
             "WrappedFriendtechSharesFactory: not enough tokens"
         );
@@ -106,9 +108,9 @@ contract WrappedFriendtechSharesFactory {
         sharesSupply[sharesSubject] -= amount;
         uint256 amountOwed = FTS.getSellPriceAfterFee(sharesSubject, amount);
         FTS.sellShares(sharesSubject, amount);
-        wFTS.burnFrom(
+        _burn(
             msg.sender,
-            sharesSubjectToTokenId[sharesSubject],
+            subjectToTokenId[sharesSubject],
             amount
         );
         msg.sender.safeTransferETH(amountOwed);
