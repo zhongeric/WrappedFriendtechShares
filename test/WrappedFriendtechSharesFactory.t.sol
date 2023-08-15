@@ -56,27 +56,16 @@ contract WrappedFriendtechSharesFactoryTest is Test {
     }
 
     // add invariants for wFTSFactory solvency
-    // function xinvariant_alwaysPurchasable() external payable {
-    //     if (bobToken.balanceOf(address(this)) == 0) {
-    //         return;
-    //     }
-    //     uint256 amount = 1;
-    //     uint256 sharesSupplyBefore = wFTSFactory.sharesSupply(bob);
-    //     uint256 buyPrice = friendtechShares.getBuyPriceAfterFee(bob, amount);
-    //     // for gas
-    //     vm.deal(address(this), buyPrice + 1 ether);
-    //     wFTSFactory.buyShares{value: buyPrice}(bob, amount);
-    //     assertEq(
-    //         wFTSFactory.sharesSupply(bob),
-    //         sharesSupplyBefore + amount,
-    //         "wrong shares balance"
-    //     );
-    //     assertEq(
-    //         bobToken.balanceOf(address(this)),
-    //         amount,
-    //         "wrong token balance"
-    //     );
-    // }
+    function invariant_alwaysRedeemable() external payable {
+        if(wFTSFactory.balanceOf(eve, aliceTokenId) == 0) {
+            return;
+        }
+        uint256 sharesSupply = wFTSFactory.sharesSupply(alice);
+        uint256 amount = wFTSFactory.balanceOf(eve, aliceTokenId);
+        uint256 sellPrice = friendtechShares.getSellPriceAfterFee(alice, amount);
+        vm.prank(eve);
+        wFTSFactory.sellShares(alice, amount);
+    }
 
     function testBuyAndSellShares() public {
         uint256 snapStart = vm.snapshot();
