@@ -2,73 +2,65 @@
 pragma solidity >0.8.0;
 
 import {SafeTransferLib} from "solmate/src/utils/SafeTransferLib.sol";
-import {UserToken} from "./UserToken.sol";
-import {IUserToken} from "./interfaces/IUserToken.sol";
+import {WrappedFTS} from "./WrappedFTS.sol";
+import {IWrappedFTS} from "./interfaces/IWrappedFTS.sol";
 import {IFriendTechSharesV1} from "./external/IFriendTechSharesV1.sol";
 
-/// ERC20 Token Issuer built ontop of friends.tech
+/// ERC1155 Token Issuer built ontop of friends.tech
 contract Framm {
     using SafeTransferLib for address;
+
     address public friendtechSharesV1;
     bool public locked;
+
+    WrappedFTS public wFTS;
     IFriendTechSharesV1 FTS;
+
+    uint256 public numSubjects = 0;
+
+    event ShareSubjectCreated(
+        address indexed sharesSubject,
+        uint256 indexed tokenId
+    );
 
     // Storage copied from IFriendTechSharesV1
     // SharesSubject => Supply
     mapping(address => uint256) public sharesSupply;
     // Framm storage
-    mapping(address => address) public sharesSubjectToToken;
-    mapping(address => address) public tokenToSharesSubject;
+    mapping(address => uint256) public sharesSubjectToTokenId;
+    mapping(uint256 => address) public tokenIdtoSharesSubject;
 
     constructor(address _friendtechSharesV1) {
         friendtechSharesV1 = _friendtechSharesV1;
         FTS = IFriendTechSharesV1(friendtechSharesV1);
+        wFTS = new WrappedFTS();
     }
 
     modifier onlyInitializedSharesSubject() {
         require(
-            sharesSubjectToToken[msg.sender] != address(0),
+            sharesSubjectToTokenId[msg.sender] != 0,
             "Framm: not shares subject"
         );
         _;
     }
 
-    modifier onlyInitializedToken() {
-        require(
-            tokenToSharesSubject[msg.sender] != address(0),
-            "Framm: not token"
-        );
-        _;
-    }
-
     modifier reentrancyLock() {
-        require(!locked, "UserToken: reentrant call");
+        require(!locked, "WrappedFTS: reentrant call");
         locked = true;
         _;
         locked = false;
     }
 
-    function createToken(
-        address sharesSubject,
-        string memory name,
-        string memory symbol
-    ) external returns (address token) {
+    function createToken(address sharesSubject) external returns (uint256 id) {
         require(
-            sharesSubjectToToken[sharesSubject] == address(0),
+            sharesSubjectToTokenId[sharesSubject] == 0,
             "Framm: token already exists"
         );
-        token = address(new UserToken(name, symbol));
-        sharesSubjectToToken[sharesSubject] = token;
-    }
-
-    function changeNameSymbol(
-        string memory name,
-        string memory symbol
-    ) external onlyInitializedSharesSubject {
-        IUserToken(sharesSubjectToToken[msg.sender]).changeNameSymbol(
-            name,
-            symbol
-        );
+        numSubjects += 1;
+        sharesSubjectToTokenId[sharesSubject] = numSubjects;
+        tokenIdtoSharesSubject[numSubjects] = sharesSubject;
+        emit ShareSubjectCreated(sharesSubject, numSubjects);
+        return numSubjects;
     }
 
     function buyShares(
@@ -76,7 +68,7 @@ contract Framm {
         uint256 amount
     ) external payable reentrancyLock {
         require(
-            sharesSubjectToToken[sharesSubject] != address(0),
+            sharesSubjectToTokenId[sharesSubject] != 0,
             "Framm: token not created"
         );
         require(
@@ -84,9 +76,11 @@ contract Framm {
             "Framm: not enough for buy"
         );
         FTS.buyShares{value: msg.value}(sharesSubject, amount);
-        IUserToken(sharesSubjectToToken[sharesSubject]).mint(
+        wFTS.mint(
             msg.sender,
-            amount
+            sharesSubjectToTokenId[sharesSubject],
+            amount,
+            ""
         );
         sharesSupply[sharesSubject] += amount;
     }
@@ -96,7 +90,7 @@ contract Framm {
         uint256 amount
     ) external reentrancyLock {
         require(
-            sharesSubjectToToken[sharesSubject] != address(0),
+            sharesSubjectToTokenId[sharesSubject] != 0,
             "Framm: token not created"
         );
         require(
@@ -104,17 +98,17 @@ contract Framm {
             "Framm: not enough shares"
         );
         require(
-            IUserToken(sharesSubjectToToken[sharesSubject]).balanceOf(
-                msg.sender
-            ) >= amount,
+            wFTS.balanceOf(msg.sender, sharesSubjectToTokenId[sharesSubject]) >=
+                amount,
             "Framm: not enough tokens"
         );
 
         sharesSupply[sharesSubject] -= amount;
         uint256 amountOwed = FTS.getSellPriceAfterFee(sharesSubject, amount);
         FTS.sellShares(sharesSubject, amount);
-        IUserToken(sharesSubjectToToken[sharesSubject]).burnFrom(
+        wFTS.burnFrom(
             msg.sender,
+            sharesSubjectToTokenId[sharesSubject],
             amount
         );
         msg.sender.safeTransferETH(amountOwed);

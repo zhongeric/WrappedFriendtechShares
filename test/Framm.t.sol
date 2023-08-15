@@ -4,7 +4,7 @@ pragma solidity >0.8.0;
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {Framm} from "../src/Framm.sol";
-import {UserToken} from "../src/UserToken.sol";
+import {WrappedFTS} from "../src/WrappedFTS.sol";
 import {FriendtechSharesV1} from "./FriendtechSharesV1.t.sol";
 
 contract FrammTest is Test {
@@ -14,11 +14,13 @@ contract FrammTest is Test {
     address protocolFeeDestination = address(0xaaaa);
     FriendtechSharesV1 friendtechShares;
     Framm framm;
-    UserToken aliceToken;
-    UserToken bobToken;
+    WrappedFTS wFTS;
+    uint256 aliceTokenId;
+    uint256 bobTokenId;
 
     function setUp() public virtual {
         friendtechShares = new FriendtechSharesV1();
+        wFTS = new WrappedFTS();
         friendtechShares.setFeeDestination(protocolFeeDestination);
         friendtechShares.setProtocolFeePercent(0.05 ether);
         friendtechShares.setSubjectFeePercent(0.05 ether);
@@ -29,14 +31,15 @@ contract FrammTest is Test {
         address[] memory shareSubjects = new address[](2);
         shareSubjects[0] = alice;
         shareSubjects[1] = bob;
-        framm.createToken(alice, "alice token", "ALICE");
-        address token = framm.sharesSubjectToToken(alice);
-        require(token != address(0), "token not created");
-        aliceToken = UserToken(token);
-        framm.createToken(bob, "bob token", "BOB");
-        token = framm.sharesSubjectToToken(bob);
-        require(token != address(0), "token not created");
-        bobToken = UserToken(token);
+        aliceTokenId = framm.createToken(alice);
+        assertEq(aliceTokenId, 1);
+        assertEq(framm.sharesSubjectToTokenId(alice), 1);
+        assertEq(framm.tokenIdtoSharesSubject(1), alice);
+
+        bobTokenId = framm.createToken(bob);
+        assertEq(bobTokenId, 2);
+        assertEq(framm.sharesSubjectToTokenId(bob), 2);
+        assertEq(framm.tokenIdtoSharesSubject(2), bob);
 
         for (uint256 i = 0; i < shareSubjects.length; i++) {
             vm.deal(shareSubjects[i], 100 ether);
@@ -47,28 +50,36 @@ contract FrammTest is Test {
         }
     }
 
-    // add invariants for framm solvency
-    function xinvariant_alwaysPurchasable() external payable {
-        if (bobToken.balanceOf(address(this)) == 0) {
-            return;
-        }
-        uint256 amount = 1;
-        uint256 sharesSupplyBefore = framm.sharesSupply(bob);
-        uint256 buyPrice = friendtechShares.getBuyPriceAfterFee(bob, amount);
-        // for gas
-        vm.deal(address(this), buyPrice + 1 ether);
-        framm.buyShares{value: buyPrice}(bob, amount);
-        assertEq(
-            framm.sharesSupply(bob),
-            sharesSupplyBefore + amount,
-            "wrong shares balance"
-        );
-        assertEq(
-            bobToken.balanceOf(address(this)),
-            amount,
-            "wrong token balance"
+    function invariant_leShareSupply() external {
+        assertLe(
+            framm.sharesSupply(alice),
+            friendtechShares.sharesSupply(alice),
+            "internal accounting of share supply not le"
         );
     }
+
+    // add invariants for framm solvency
+    // function xinvariant_alwaysPurchasable() external payable {
+    //     if (bobToken.balanceOf(address(this)) == 0) {
+    //         return;
+    //     }
+    //     uint256 amount = 1;
+    //     uint256 sharesSupplyBefore = framm.sharesSupply(bob);
+    //     uint256 buyPrice = friendtechShares.getBuyPriceAfterFee(bob, amount);
+    //     // for gas
+    //     vm.deal(address(this), buyPrice + 1 ether);
+    //     framm.buyShares{value: buyPrice}(bob, amount);
+    //     assertEq(
+    //         framm.sharesSupply(bob),
+    //         sharesSupplyBefore + amount,
+    //         "wrong shares balance"
+    //     );
+    //     assertEq(
+    //         bobToken.balanceOf(address(this)),
+    //         amount,
+    //         "wrong token balance"
+    //     );
+    // }
 
     function testBuyAndSellShares(uint256 amount) public {
         uint256 snapStart = vm.snapshot();
@@ -82,7 +93,11 @@ contract FrammTest is Test {
             sharesSupplyBefore + amount,
             "wrong shares balance"
         );
-        assertEq(aliceToken.balanceOf(eve), amount, "wrong token balance");
+        assertEq(
+            wFTS.balanceOf(eve, aliceTokenId),
+            amount,
+            "wrong token balance"
+        );
 
         uint256 eveBalanceBefore = eve.balance;
         sharesSupplyBefore = framm.sharesSupply(alice);
@@ -96,7 +111,7 @@ contract FrammTest is Test {
             sharesSupplyBefore - amount,
             "wrong shares balance"
         );
-        assertEq(aliceToken.balanceOf(eve), 0, "wrong token balance");
+        assertEq(wFTS.balanceOf(eve, aliceTokenId), 0, "wrong token balance");
         assertEq(
             eve.balance - eveBalanceBefore,
             sellPrice,
@@ -119,23 +134,23 @@ contract FrammTest is Test {
             "wrong shares balance"
         );
         sharesSupplyBefore = framm.sharesSupply(alice);
-        assertEq(aliceToken.balanceOf(eve), amount, "wrong token balance");
+        assertEq(
+            wFTS.balanceOf(eve, aliceTokenId),
+            amount,
+            "wrong token balance"
+        );
         // eve transfers tokens to bob
-        aliceToken.transfer(bob, amount);
+        wFTS.safeTransferFrom(eve, bob, amount, aliceTokenId, "");
         assertEq(
             framm.sharesSupply(alice),
             sharesSupplyBefore,
             "shares balance not equal after transfer"
         );
+        assertEq(wFTS.balanceOf(eve, aliceTokenId), 0, "wrong token balance");
         assertEq(
-            aliceToken.balanceOf(eve),
-            0,
-            "wrong token balance after transfer"
-        );
-        assertEq(
-            aliceToken.balanceOf(bob),
+            wFTS.balanceOf(bob, aliceTokenId),
             amount,
-            "wrong token balance after transfer"
+            "wrong token balance"
         );
         // eve cannot sell the tokens
         vm.expectRevert("Framm: not enough tokens");
@@ -156,7 +171,7 @@ contract FrammTest is Test {
             sharesSupplyBefore - amount,
             "wrong shares balance"
         );
-        assertEq(aliceToken.balanceOf(bob), 0, "wrong token balance");
+        assertEq(wFTS.balanceOf(bob, aliceTokenId), 0, "wrong token balance");
         assertEq(
             bob.balance - bobBalanceBefore,
             sellPrice,
@@ -179,12 +194,16 @@ contract FrammTest is Test {
             "wrong shares balance"
         );
         sharesSupplyBefore = framm.sharesSupply(alice);
-        assertEq(aliceToken.balanceOf(eve), amount, "wrong token balance");
-        aliceToken.approve(bob, amount);
+        assertEq(
+            wFTS.balanceOf(eve, aliceTokenId),
+            amount,
+            "wrong token balance"
+        );
+        wFTS.setApprovalForAll(bob, true);
         vm.stopPrank();
 
         vm.prank(bob);
-        aliceToken.transferFrom(eve, bob, amount);
+        wFTS.safeTransferFrom(eve, bob, amount, aliceTokenId, "");
         // eve cannot sell the tokens
         vm.prank(eve);
         vm.expectRevert("Framm: not enough tokens");
@@ -196,13 +215,9 @@ contract FrammTest is Test {
             sharesSupplyBefore,
             "shares balance not equal after transfer"
         );
+        assertEq(wFTS.balanceOf(eve, aliceTokenId), 0, "wrong token balance");
         assertEq(
-            aliceToken.balanceOf(eve),
-            0,
-            "wrong token balance after transfer"
-        );
-        assertEq(
-            aliceToken.balanceOf(bob),
+            wFTS.balanceOf(bob, aliceTokenId),
             amount,
             "wrong token balance after transfer"
         );
@@ -218,7 +233,7 @@ contract FrammTest is Test {
             sharesSupplyBefore - amount,
             "wrong shares balance"
         );
-        assertEq(aliceToken.balanceOf(bob), 0, "wrong token balance");
+        assertEq(wFTS.balanceOf(bob, aliceTokenId), 0, "wrong token balance");
         assertEq(
             bob.balance - bobBalanceBefore,
             sellPrice,
