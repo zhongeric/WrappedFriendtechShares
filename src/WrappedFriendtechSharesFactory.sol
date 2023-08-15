@@ -6,7 +6,9 @@ import {ERC1155} from "solmate/src/tokens/ERC1155.sol";
 import {IWrappedFriendtechSharesFactory} from "./interfaces/IWrappedFriendtechSharesFactory.sol";
 import {IFriendTechSharesV1} from "./external/IFriendTechSharesV1.sol";
 
-/// ERC1155 Token Issuer built ontop of friends.tech
+/// ERC1155 Token Issuer built ontop of friends.tech 
+/// Holds an internal balance and mints / burns tokens 
+/// No fee on transfer but minting / burning are subject to fees set in friendTechSharesV1 contract
 contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1155 {
     using SafeTransferLib for address;
 
@@ -26,6 +28,10 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
     event BaseURIChanged(
         string indexed baseURI
     );
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
 
     // Storage copied from IFriendTechSharesV1
     // SharesSubject => Supply
@@ -44,15 +50,6 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
         owner = msg.sender;
         friendtechSharesV1 = _friendtechSharesV1;
         FTS = IFriendTechSharesV1(friendtechSharesV1);
-    }
-
-    function uri(uint256 id) public view override returns (string memory) {
-        return string(abi.encodePacked(baseURI, tokenIdToSubject[id]));
-    }
-
-    function setBaseURI(string memory _baseURI) public onlyOwner {
-        baseURI = _baseURI;
-        emit BaseURIChanged(baseURI);
     }
 
     modifier reentrancyLock() {
@@ -123,6 +120,20 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
             amount
         );
         msg.sender.safeTransferETH(amountOwed);
+    }
+
+    function uri(uint256 id) public view override returns (string memory) {
+        return string(abi.encodePacked(baseURI, tokenIdToSubject[id]));
+    }
+
+    function setBaseURI(string memory _baseURI) public onlyOwner {
+        baseURI = _baseURI;
+        emit BaseURIChanged(baseURI);
+    }
+
+    function transferOwnership(address newOwner) public onlyOwner {
+        emit OwnershipTransferred(owner, newOwner);
+        owner = newOwner;
     }
 
     receive() external payable {}
