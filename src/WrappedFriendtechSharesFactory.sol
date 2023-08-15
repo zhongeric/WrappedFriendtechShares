@@ -72,7 +72,7 @@ contract WrappedFriendtechSharesFactory {
             "WrappedFriendtechSharesFactory: token not created"
         );
         require(
-            msg.value > FTS.getBuyPrice(sharesSubject, amount),
+            msg.value >= FTS.getBuyPrice(sharesSubject, amount),
             "WrappedFriendtechSharesFactory: not enough for buy"
         );
         FTS.buyShares{value: msg.value}(sharesSubject, amount);
