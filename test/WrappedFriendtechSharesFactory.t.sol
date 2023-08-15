@@ -70,12 +70,13 @@ contract WrappedFriendtechSharesFactoryTest is Test {
         wFTSFactory.sellShares(alice, amount);
     }
 
-    function testBuyAndSellShares() public {
+    function testBuyAndSellShares(uint8 amount) public {
         uint256 snapStart = vm.snapshot();
-        uint256 amount = 1;
-        vm.startPrank(eve);
         uint256 sharesSupplyBefore = wFTSFactory.sharesSupply(alice);
         uint256 buyPrice = friendtechShares.getBuyPriceAfterFee(alice, amount);
+        vm.assume(buyPrice < eve.balance);
+
+        vm.startPrank(eve);
         wFTSFactory.buyShares{value: buyPrice}(alice, amount);
         assertEq(
             wFTSFactory.sharesSupply(alice),
@@ -110,12 +111,13 @@ contract WrappedFriendtechSharesFactoryTest is Test {
         vm.revertTo(snapStart);
     }
 
-    function testTransferTokens() public {
+    function testTransferTokens(uint8 amount) public {
         uint256 snapStart = vm.snapshot();
-        uint256 amount = 1;
-        vm.startPrank(eve);
         uint256 sharesSupplyBefore = wFTSFactory.sharesSupply(alice);
         uint256 buyPrice = friendtechShares.getBuyPriceAfterFee(alice, amount);
+        vm.assume(buyPrice < eve.balance);
+        
+        vm.startPrank(eve);
         wFTSFactory.buyShares{value: buyPrice}(alice, amount);
         assertEq(
             wFTSFactory.sharesSupply(alice),
@@ -129,7 +131,7 @@ contract WrappedFriendtechSharesFactoryTest is Test {
             "wrong token balance"
         );
         // eve transfers tokens to bob
-        wFTSFactory.safeTransferFrom(eve, bob, amount, aliceTokenId, "");
+        wFTSFactory.safeTransferFrom(eve, bob, aliceTokenId, amount, "");
         assertEq(
             wFTSFactory.sharesSupply(alice),
             sharesSupplyBefore,
@@ -141,12 +143,14 @@ contract WrappedFriendtechSharesFactoryTest is Test {
             amount,
             "wrong token balance"
         );
-        // eve cannot sell the tokens
+
+        // assume that this is not the last token, as that cannot be sold
+        vm.assume(friendtechShares.sharesSupply(alice) > 1);
         vm.expectRevert("WrappedFriendtechSharesFactory: not enough tokens");
         wFTSFactory.sellShares(alice, amount);
         vm.stopPrank();
 
-        // bob can now sell the tokens
+        // bob can sell the tokens
         vm.startPrank(bob);
         uint256 bobBalanceBefore = bob.balance;
         sharesSupplyBefore = wFTSFactory.sharesSupply(alice);
@@ -192,7 +196,7 @@ contract WrappedFriendtechSharesFactoryTest is Test {
         vm.stopPrank();
 
         vm.prank(bob);
-        wFTSFactory.safeTransferFrom(eve, bob, amount, aliceTokenId, "");
+        wFTSFactory.safeTransferFrom(eve, bob, aliceTokenId, amount, "");
         // eve cannot sell the tokens
         vm.prank(eve);
         vm.expectRevert("WrappedFriendtechSharesFactory: not enough tokens");
