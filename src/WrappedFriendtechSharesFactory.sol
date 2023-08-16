@@ -14,11 +14,10 @@ import {IFriendTechSharesV1} from "./external/IFriendTechSharesV1.sol";
 contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1155 {
     using SafeTransferLib for address;
 
-    address public friendtechSharesV1;
     uint256 public lastId = 0;
     bool public locked;
 
-    IFriendTechSharesV1 FTS;
+    IFriendTechSharesV1 public friendtechSharesV1;
 
     event ShareSubjectCreated(address indexed sharesSubject, uint256 indexed tokenId);
     event URIChanged(uint256 indexed id, string uri);
@@ -33,8 +32,7 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
     mapping(uint256 => string) public tokenURIs;
 
     constructor(address _friendtechSharesV1) {
-        friendtechSharesV1 = _friendtechSharesV1;
-        FTS = IFriendTechSharesV1(friendtechSharesV1);
+        friendtechSharesV1 = IFriendTechSharesV1(_friendtechSharesV1);
     }
 
     modifier reentrancyLock() {
@@ -64,10 +62,10 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
     function buyShares(address sharesSubject, uint256 amount) external payable reentrancyLock {
         require(subjectToTokenId[sharesSubject] != 0, "WrappedFriendtechSharesFactory: token not created");
         require(
-            msg.value >= FTS.getBuyPriceAfterFee(sharesSubject, amount),
+            msg.value >= friendtechSharesV1.getBuyPriceAfterFee(sharesSubject, amount),
             "WrappedFriendtechSharesFactory: not enough for buy"
         );
-        FTS.buyShares{value: msg.value}(sharesSubject, amount);
+        friendtechSharesV1.buyShares{value: msg.value}(sharesSubject, amount);
         _mint(msg.sender, subjectToTokenId[sharesSubject], amount, "");
         sharesSupply[sharesSubject] += amount;
     }
@@ -85,8 +83,8 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
         );
 
         sharesSupply[sharesSubject] -= amount;
-        uint256 amountOwed = FTS.getSellPriceAfterFee(sharesSubject, amount);
-        FTS.sellShares(sharesSubject, amount);
+        uint256 amountOwed = friendtechSharesV1.getSellPriceAfterFee(sharesSubject, amount);
+        friendtechSharesV1.sellShares(sharesSubject, amount);
         _burn(msg.sender, subjectToTokenId[sharesSubject], amount);
         msg.sender.safeTransferETH(amountOwed);
     }
