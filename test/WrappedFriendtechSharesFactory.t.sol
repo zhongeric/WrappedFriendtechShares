@@ -57,12 +57,12 @@ contract WrappedFriendtechSharesFactoryTest is Test {
 
         // set up invariant testing
         handler = new Handler(address(wFTSFactory), address(friendtechShares));
-        bytes4[] memory selectors = new bytes4[](2);
+        bytes4[] memory selectors = new bytes4[](3);
         selectors[0] = Handler.buyShares.selector;
         selectors[1] = Handler.sellShares.selector;
+        selectors[2] = Handler.safeTransferFrom.selector;
 
         targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
-
         targetContract(address(handler));
     }
 
@@ -79,19 +79,6 @@ contract WrappedFriendtechSharesFactoryTest is Test {
     function invariant_noLeftoverETHInFactory() external {
         assertEq(address(wFTSFactory).balance, 0, "balance of factory not 0");
     }
-
-    // function invariant_alwaysEnoughETH() external payable {
-    //     // factory always has enough eth if all held shares are sold
-    //     uint256 ethOwed = 0;
-    //     for(uint256 i = 0; i <= wFTSFactory.lastId(); i++) {
-    //         uint256 amount = wFTSFactory.balanceOf(address(this), i);
-    //         if (amount == 0) {
-    //             continue;
-    //         }
-    //         ethOwed += friendtechShares.getSellPriceAfterFee(wFTSFactory.tokenIdToSubject(i), amount);
-    //     }
-    //     assertGe(address(this).balance, ethOwed, "not enough eth to sell all haress");
-    // }
 
     function testBuyAndSellShares(uint8 amount) public {
         uint256 snapStart = vm.snapshot();

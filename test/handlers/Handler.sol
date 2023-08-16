@@ -117,6 +117,21 @@ contract Handler is CommonBase, StdCheats, StdUtils {
         vm.stopPrank();
     }
 
+    function safeTransferFrom(uint256 fromSeed, uint256 toSeed, uint256 amount) public createActor {
+        address from = _actors.rand(fromSeed);
+        address to = _actors.rand(toSeed);
+        uint256 tokenId = wFTSFactory.subjectToTokenId(sharesSubject);
+        if (wFTSFactory.balanceOf(from, tokenId) == 0) {
+            return;
+        }
+        amount = bound(amount, 0, wFTSFactory.balanceOf(from, tokenId));
+        vm.prank(from);
+        wFTSFactory.safeTransferFrom(from, to, tokenId, amount, "");
+    }
+
+    receive() external payable {}
+
+    // helper functions
     function _pay(address to, uint256 amount) internal {
         (bool s,) = to.call{value: amount}("");
         require(s, "pay() failed");
@@ -126,9 +141,6 @@ contract Handler is CommonBase, StdCheats, StdUtils {
         return _actors.addrs;
     }
 
-    receive() external payable {}
-
-    // helper functions
     function forEachActor(function(address) external returns (address) func) public {
         return _actors.forEach(func);
     }
