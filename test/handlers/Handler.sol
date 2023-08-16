@@ -88,7 +88,7 @@ contract Handler is CommonBase, StdCheats, StdUtils {
         address caller = _actors.rand(actorSeed);
         // asssume caller is EOA just to make sure they can receive the ETH from the sell.
         // this is a limitation of the friendstechSharesV1 contract
-        if(caller.code.length == 0) {
+        if (caller.code.length == 0) {
             return;
         }
         uint256 buyPrice = friendtechSharesV1.getBuyPriceAfterFee(sharesSubject, amount);
@@ -102,7 +102,7 @@ contract Handler is CommonBase, StdCheats, StdUtils {
         address caller = _actors.rand(actorSeed);
         // asssume caller is EOA just to make sure they can receive the ETH from the sell.
         // this is a limitation of the friendstechSharesV1 contract
-        if(caller.code.length == 0) {
+        if (caller.code.length == 0) {
             return;
         }
         uint256 tokenId = wFTSFactory.subjectToTokenId(sharesSubject);

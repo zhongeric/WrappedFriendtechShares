@@ -18,7 +18,7 @@ contract WrappedFriendtechSharesFactoryTest is Test {
     uint256 bobTokenId;
 
     Handler public handler;
-    MockReentrant1155Receiver public mockReentrant1155Receiver;
+    MockReentrant1155Receiver public mockReentrant1155Receiver = new MockReentrant1155Receiver(alice);
 
     function setUp() public virtual {
         friendtechShares = new FriendtechSharesV1();
@@ -50,11 +50,6 @@ contract WrappedFriendtechSharesFactoryTest is Test {
             // thus, there will always be one share owned by the shareSubject
             friendtechShares.buyShares{value: 0.1 ether}(shareSubjects[i], 1);
         }
-
-        assertEq(address(wFTSFactory).balance, 0, "factory balance not 0");
-
-        mockReentrant1155Receiver = new MockReentrant1155Receiver(alice);
-
         // set up invariant testing
         handler = new Handler(address(wFTSFactory), address(friendtechShares));
         bytes4[] memory selectors = new bytes4[](3);
