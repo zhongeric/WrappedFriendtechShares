@@ -89,6 +89,12 @@ contract WrappedFriendtechSharesFactory is ERC1155 {
         msg.sender.safeTransferETH(amountOwed);
     }
 
+    /// @notice Burn ERC1155 tokens
+    /// @dev the corresponding shares held by this contract wil be unrecoverable
+    function burn(uint256 id, uint256 amount) external {
+        _burn(msg.sender, id, amount);
+    }
+
     /// @notice get the uri for a token by id
     /// @param id The token id
     function uri(uint256 id) public view override returns (string memory) {

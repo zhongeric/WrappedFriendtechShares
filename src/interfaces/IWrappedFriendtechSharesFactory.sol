@@ -14,4 +14,6 @@ interface IWrappedFriendtechSharesFactory is IERC1155 {
     function buyShares(address sharesSubject, uint256 amount) external payable;
 
     function sellShares(address sharesSubject, uint256 amount) external;
+
+    function burn(uint256 id, uint256 amount) external;
 }

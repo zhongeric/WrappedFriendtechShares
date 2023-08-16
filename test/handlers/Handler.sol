@@ -64,6 +64,7 @@ contract Handler is CommonBase, StdCheats, StdUtils {
 
     AddressSet internal _actors;
     address public sharesSubject = address(0xffff);
+    uint256 public tokenId;
 
     constructor(address _wFTSFactory, address _friendtechSharesV1) {
         wFTSFactory = IWrappedFriendtechSharesFactory(_wFTSFactory);
@@ -71,7 +72,7 @@ contract Handler is CommonBase, StdCheats, StdUtils {
         deal(address(this), 1_000_000 ether);
         deal(sharesSubject, 1 ether);
 
-        wFTSFactory.createToken(sharesSubject);
+        tokenId = wFTSFactory.createToken(sharesSubject);
         vm.prank(sharesSubject);
         friendtechSharesV1.buyShares{value: 0.01 ether}(sharesSubject, 1);
     }
@@ -105,7 +106,6 @@ contract Handler is CommonBase, StdCheats, StdUtils {
         if (caller.code.length == 0) {
             return;
         }
-        uint256 tokenId = wFTSFactory.subjectToTokenId(sharesSubject);
         if (wFTSFactory.balanceOf(caller, tokenId) == 0) {
             return;
         }
@@ -120,13 +120,19 @@ contract Handler is CommonBase, StdCheats, StdUtils {
     function safeTransferFrom(uint256 fromSeed, uint256 toSeed, uint256 amount) public createActor {
         address from = _actors.rand(fromSeed);
         address to = _actors.rand(toSeed);
-        uint256 tokenId = wFTSFactory.subjectToTokenId(sharesSubject);
         if (wFTSFactory.balanceOf(from, tokenId) == 0) {
             return;
         }
         amount = bound(amount, 0, wFTSFactory.balanceOf(from, tokenId));
         vm.prank(from);
         wFTSFactory.safeTransferFrom(from, to, tokenId, amount, "");
+    }
+
+    function burn(uint256 actorSeed, uint256 amount) external {
+        address caller = _actors.rand(actorSeed);
+        amount = bound(amount, 0, wFTSFactory.balanceOf(caller, tokenId));
+        vm.prank(caller);
+        wFTSFactory.burn(tokenId, amount);
     }
 
     receive() external payable {}
