@@ -101,7 +101,7 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
     /// @param id The token id
     /// @param _uri The uri to set
     function setURI(uint256 id, string memory _uri) public {
-        require(msg.sender == tokenIdToSubject[id], "WrappedFriendtechSharesFactory: not shares subject of token");
+        require(msg.sender == tokenIdToSubject[id], "WrappedFriendtechSharesFactory: not shares subject");
         tokenURIs[id] = _uri;
         emit URIChanged(id, tokenURIs[id]);
     }

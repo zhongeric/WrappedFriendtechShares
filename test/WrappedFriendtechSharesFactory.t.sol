@@ -175,4 +175,15 @@ contract WrappedFriendtechSharesFactoryTest is Test {
         wFTSFactory.buyShares{value: buyPrice}(alice, amount);
         vm.stopPrank();
     }
+
+    function testSharesSubjectCanChangeURI() public {
+        vm.prank(alice);
+        wFTSFactory.setURI(aliceTokenId, "newURI");
+    }
+
+    function testNotSharesSubjectCannotChangeURI() public {
+        vm.prank(bob);
+        vm.expectRevert("WrappedFriendtechSharesFactory: not shares subject");
+        wFTSFactory.setURI(aliceTokenId, "newURI");
+    }
 }
