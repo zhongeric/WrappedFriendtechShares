@@ -3,7 +3,10 @@ A simple ERC1155 wrapper around shares of friend.tech.
 
 Now you can transfer shares to friends, use them in lending pools as collateral, and more. Also allows for the shares subject to customize the URI of their wrapped ERC1155 so they can self host where their metadata is stored.
 
-PRs welcome!
+Contract is not deployed yet, feel free to deploy it yourself using the instructions below. Please make a PR to update this README with the deployed address. Feature PRs welcome as well!
+
+### Deployed Addresses
+Base: <>
 
 ### Deploy on base
 
