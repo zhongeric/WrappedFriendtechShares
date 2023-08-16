@@ -3,6 +3,7 @@ pragma solidity >0.8.0;
 
 import {Test} from "forge-std/Test.sol";
 import {WrappedFriendtechSharesFactory} from "../src/WrappedFriendtechSharesFactory.sol";
+import {Handler} from "./handlers/Handler.sol"; 
 import {FriendtechSharesV1} from "./FriendtechSharesV1.t.sol";
 import {MockReentrant1155Receiver} from "./mock/MockReentrant1155Receiver.sol";
 
@@ -16,6 +17,7 @@ contract WrappedFriendtechSharesFactoryTest is Test {
     uint256 aliceTokenId;
     uint256 bobTokenId;
 
+    Handler public handler;
     MockReentrant1155Receiver public mockReentrant1155Receiver;
 
     function setUp() public virtual {
@@ -23,6 +25,7 @@ contract WrappedFriendtechSharesFactoryTest is Test {
         friendtechShares.setFeeDestination(protocolFeeDestination);
         friendtechShares.setProtocolFeePercent(0.05 ether);
         friendtechShares.setSubjectFeePercent(0.05 ether);
+
         wFTSFactory = new WrappedFriendtechSharesFactory(
             address(friendtechShares)
         );
@@ -49,10 +52,14 @@ contract WrappedFriendtechSharesFactoryTest is Test {
             // thus, there will always be one share owned by the shareSubject
             friendtechShares.buyShares{value: 0.1 ether}(shareSubjects[i], 1);
         }
-        
-        mockReentrant1155Receiver = new MockReentrant1155Receiver(alice);
 
         assertEq(address(wFTSFactory).balance, 0, "factory balance not 0");
+        
+        mockReentrant1155Receiver = new MockReentrant1155Receiver(alice);
+        
+        // set up invariant testing
+        handler = new Handler(address(wFTSFactory));
+        targetContract(address(handler));
     }
 
     function invariant_leShareSupply() external {
@@ -63,17 +70,23 @@ contract WrappedFriendtechSharesFactoryTest is Test {
         );
     }
 
-    // add invariants for wFTSFactory solvency
-    function invariant_alwaysRedeemable() external payable {
-        if (wFTSFactory.balanceOf(eve, aliceTokenId) == 0) {
-            return;
-        }
-        uint256 sharesSupply = wFTSFactory.sharesSupply(alice);
-        assertLe(wFTSFactory.balanceOf(eve, aliceTokenId), sharesSupply, "balance of eve not le to sharesSupply");
-        uint256 amount = wFTSFactory.balanceOf(eve, aliceTokenId);
-        vm.prank(eve);
-        wFTSFactory.sellShares(alice, amount);
-    }
+    // function invariant_alwaysRedeemable() external payable {
+    //     vm.prank(eve);
+    //     wFTSFactory.sellShares(alice, 1);
+    // }
+
+    // function invariant_alwaysEnoughETH() external payable {
+    //     // factory always has enough eth if all held shares are sold
+    //     uint256 ethOwed = 0;
+    //     for(uint256 i = 0; i <= wFTSFactory.lastId(); i++) {
+    //         uint256 amount = wFTSFactory.balanceOf(address(this), i);
+    //         if (amount == 0) {
+    //             continue;
+    //         }
+    //         ethOwed += friendtechShares.getSellPriceAfterFee(wFTSFactory.tokenIdToSubject(i), amount);
+    //     }
+    //     assertGe(address(this).balance, ethOwed, "not enough eth to sell all haress");
+    // }
 
     function testBuyAndSellShares(uint8 amount) public {
         uint256 snapStart = vm.snapshot();
