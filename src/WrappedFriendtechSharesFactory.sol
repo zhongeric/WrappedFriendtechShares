@@ -14,7 +14,6 @@ import {IFriendTechSharesV1} from "./external/IFriendTechSharesV1.sol";
 contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1155 {
     using SafeTransferLib for address;
 
-    string public baseURI = "";
     address public friendtechSharesV1;
     uint256 public lastId = 0;
     bool public locked;
