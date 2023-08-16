@@ -1,3 +1,17 @@
+## WrappedFriendtechShares
+A simple ERC1155 wrapper around shares of friend.tech
+
+### Deploy on base
+
+```shell
+$ forge script script/WrappedFriendtechSharesFactory.s.sol:WrappedFriendtechSharesFactoryScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+```
+
+### Disclaimer
+Code is provided as is, without any warranty or support. These contracts have not been audited for use in production. Use at your own risk.
+
+---
+
 ## Foundry
 
 **Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
@@ -48,7 +62,7 @@ $ anvil
 ### Deploy
 
 ```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+$ forge script script/WrappedFriendtechSharesFactory.s.sol:WrappedFriendtechSharesFactoryScript --rpc-url <your_rpc_url> --private-key <your_private_key>
 ```
 
 ### Cast
