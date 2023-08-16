@@ -89,10 +89,17 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
         msg.sender.safeTransferETH(amountOwed);
     }
 
+    /// @notice get the uri for a token by id
+    /// @param id The token id
     function uri(uint256 id) public view override returns (string memory) {
         return tokenURIs[id];
     }
 
+    /// @notice Sets the uri for a token
+    /// @dev Only callable by the shares subject address
+    /// see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1155.md#erc-1155-metadata-uri-json-schema for more info
+    /// @param id The token id
+    /// @param _uri The uri to set
     function setURI(uint256 id, string memory _uri) public {
         require(msg.sender == tokenIdToSubject[id], "WrappedFriendtechSharesFactory: not shares subject of token");
         tokenURIs[id] = _uri;
