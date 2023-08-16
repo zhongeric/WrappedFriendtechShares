@@ -12,6 +12,7 @@ struct AddressSet {
     mapping(address => bool) saved;
 }
 
+// taken from by https://mirror.xyz/horsefacts.eth/Jex2YVaO65dda6zEyfM_-DXlXhOWCAoSpOx5PLocYgw
 library LibAddressSet {
     function rand(AddressSet storage s, uint256 seed) internal view returns (address) {
         if (s.addrs.length > 0) {
@@ -36,6 +37,22 @@ library LibAddressSet {
     function count(AddressSet storage s) internal view returns (uint256) {
         return s.addrs.length;
     }
+
+    function forEach(AddressSet storage s, function(address) external returns (address) func) internal {
+        for (uint256 i; i < s.addrs.length; ++i) {
+            func(s.addrs[i]);
+        }
+    }
+
+    function reduce(AddressSet storage s, uint256 acc, function(uint256,address) external returns (uint256) func)
+        internal
+        returns (uint256)
+    {
+        for (uint256 i; i < s.addrs.length; ++i) {
+            acc = func(acc, s.addrs[i]);
+        }
+        return acc;
+    }
 }
 
 // inspired by https://mirror.xyz/horsefacts.eth/Jex2YVaO65dda6zEyfM_-DXlXhOWCAoSpOx5PLocYgw
@@ -51,7 +68,7 @@ contract Handler is CommonBase, StdCheats, StdUtils {
     constructor(address _wFTSFactory, address _friendtechSharesV1) {
         wFTSFactory = IWrappedFriendtechSharesFactory(_wFTSFactory);
         friendtechSharesV1 = IFriendTechSharesV1(_friendtechSharesV1);
-        deal(address(this), 100_000 ether);
+        deal(address(this), 1_000_000 ether);
         deal(sharesSubject, 1 ether);
 
         wFTSFactory.createToken(sharesSubject);
@@ -71,7 +88,9 @@ contract Handler is CommonBase, StdCheats, StdUtils {
         address caller = _actors.rand(actorSeed);
         // asssume caller is EOA just to make sure they can receive the ETH from the sell.
         // this is a limitation of the friendstechSharesV1 contract
-        vm.assume(caller.code.length == 0);
+        if(caller.code.length == 0) {
+            return;
+        }
         uint256 buyPrice = friendtechSharesV1.getBuyPriceAfterFee(sharesSubject, amount);
         buyPrice = bound(buyPrice, 1, address(this).balance);
         _pay(caller, buyPrice);
@@ -81,6 +100,11 @@ contract Handler is CommonBase, StdCheats, StdUtils {
 
     function sellShares(uint256 actorSeed, uint8 amount) public createActor {
         address caller = _actors.rand(actorSeed);
+        // asssume caller is EOA just to make sure they can receive the ETH from the sell.
+        // this is a limitation of the friendstechSharesV1 contract
+        if(caller.code.length == 0) {
+            return;
+        }
         uint256 tokenId = wFTSFactory.subjectToTokenId(sharesSubject);
         if (wFTSFactory.balanceOf(caller, tokenId) == 0) {
             return;
@@ -88,9 +112,6 @@ contract Handler is CommonBase, StdCheats, StdUtils {
         amount = uint8(bound(amount, 1, wFTSFactory.balanceOf(caller, tokenId)));
         uint256 ethToReceive = friendtechSharesV1.getSellPriceAfterFee(sharesSubject, amount);
         vm.startPrank(caller);
-        // asssume caller is EOA just to make sure they can receive the ETH from the sell.
-        // this is a limitation of the friendstechSharesV1 contract
-        vm.assume(caller.code.length == 0);
         wFTSFactory.sellShares(sharesSubject, amount);
         _pay(address(this), ethToReceive);
         vm.stopPrank();
@@ -106,4 +127,16 @@ contract Handler is CommonBase, StdCheats, StdUtils {
     }
 
     receive() external payable {}
+
+    // helper functions
+    function forEachActor(function(address) external returns (address) func) public {
+        return _actors.forEach(func);
+    }
+
+    function reduceActors(uint256 acc, function(uint256,address) external returns (uint256) func)
+        public
+        returns (uint256)
+    {
+        return _actors.reduce(acc, func);
+    }
 }

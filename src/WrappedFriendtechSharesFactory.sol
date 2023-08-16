@@ -108,8 +108,4 @@ contract WrappedFriendtechSharesFactory is ERC1155 {
 
     /// @notice receive eth from sales of shares
     receive() external payable {}
-
-    fallback() external payable {
-        revert("WrappedFriendtechSharesFactory: no fallback");
-    }
 }

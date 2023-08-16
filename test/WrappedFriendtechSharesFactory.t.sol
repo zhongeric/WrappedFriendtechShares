@@ -57,6 +57,12 @@ contract WrappedFriendtechSharesFactoryTest is Test {
 
         // set up invariant testing
         handler = new Handler(address(wFTSFactory), address(friendtechShares));
+        bytes4[] memory selectors = new bytes4[](2);
+        selectors[0] = Handler.buyShares.selector;
+        selectors[1] = Handler.sellShares.selector;
+
+        targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
+
         targetContract(address(handler));
     }
 
@@ -70,7 +76,7 @@ contract WrappedFriendtechSharesFactoryTest is Test {
 
     /// @dev this will actually fail if eth is sent out of band, but we don't support that
     /// in the invariant handler so it won't try
-    function invariant_alwaysZeroBalance() external {
+    function invariant_noLeftoverETHInFactory() external {
         assertEq(address(wFTSFactory).balance, 0, "balance of factory not 0");
     }
 
