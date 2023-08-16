@@ -9,6 +9,9 @@ Now you can transfer shares to friends, use them in lending pools as collateral,
 $ forge script script/WrappedFriendtechSharesFactory.s.sol:WrappedFriendtechSharesFactoryScript --rpc-url <your_rpc_url> --private-key <your_private_key>
 ```
 
+### License
+GPL-3.0-or-later
+
 ### Disclaimer
 Code is provided as is, without any warranty or support. These contracts have not been audited for use in production. Use at your own risk.
 
