@@ -11,13 +11,7 @@ contract MockReentrant1155Receiver is ERC1155TokenReceiver {
         shareSubject = _shareSubject;
     }
 
-    function onERC1155Received(
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes calldata
-    ) external override returns (bytes4) {
+    function onERC1155Received(address, address, uint256, uint256, bytes calldata) external override returns (bytes4) {
         IWrappedFriendtechSharesFactory(msg.sender).buyShares(shareSubject, 1);
         return this.onERC1155Received.selector;
     }
