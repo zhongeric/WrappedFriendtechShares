@@ -83,9 +83,9 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
         );
 
         sharesSupply[sharesSubject] -= amount;
+        _burn(msg.sender, subjectToTokenId[sharesSubject], amount);
         uint256 amountOwed = friendtechSharesV1.getSellPriceAfterFee(sharesSubject, amount);
         friendtechSharesV1.sellShares(sharesSubject, amount);
-        _burn(msg.sender, subjectToTokenId[sharesSubject], amount);
         msg.sender.safeTransferETH(amountOwed);
     }
 

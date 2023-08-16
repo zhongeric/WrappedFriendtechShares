@@ -49,8 +49,10 @@ contract WrappedFriendtechSharesFactoryTest is Test {
             // thus, there will always be one share owned by the shareSubject
             friendtechShares.buyShares{value: 0.1 ether}(shareSubjects[i], 1);
         }
-
+        
         mockReentrant1155Receiver = new MockReentrant1155Receiver(alice);
+
+        assertEq(address(wFTSFactory).balance, 0, "factory balance not 0");
     }
 
     function invariant_leShareSupply() external {
