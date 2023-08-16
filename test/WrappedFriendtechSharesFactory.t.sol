@@ -3,7 +3,7 @@ pragma solidity >0.8.0;
 
 import {Test} from "forge-std/Test.sol";
 import {WrappedFriendtechSharesFactory} from "../src/WrappedFriendtechSharesFactory.sol";
-import {Handler} from "./handlers/Handler.sol"; 
+import {Handler} from "./handlers/Handler.sol";
 import {FriendtechSharesV1} from "./FriendtechSharesV1.t.sol";
 import {MockReentrant1155Receiver} from "./mock/MockReentrant1155Receiver.sol";
 
@@ -35,7 +35,6 @@ contract WrappedFriendtechSharesFactoryTest is Test {
         address[] memory shareSubjects = new address[](3);
         shareSubjects[0] = alice;
         shareSubjects[1] = bob;
-        shareSubjects[2] = address(0xffff);
 
         aliceTokenId = wFTSFactory.createToken(alice);
         assertEq(aliceTokenId, 1);
@@ -43,7 +42,6 @@ contract WrappedFriendtechSharesFactoryTest is Test {
         assertEq(wFTSFactory.tokenIdToSubject(1), alice);
 
         bobTokenId = wFTSFactory.createToken(bob);
-        wFTSFactory.createToken(address(0xffff));
 
         for (uint256 i = 0; i < shareSubjects.length; i++) {
             vm.deal(shareSubjects[i], 100 ether);
@@ -54,9 +52,9 @@ contract WrappedFriendtechSharesFactoryTest is Test {
         }
 
         assertEq(address(wFTSFactory).balance, 0, "factory balance not 0");
-        
+
         mockReentrant1155Receiver = new MockReentrant1155Receiver(alice);
-        
+
         // set up invariant testing
         handler = new Handler(address(wFTSFactory), address(friendtechShares));
         targetContract(address(handler));
@@ -73,17 +71,8 @@ contract WrappedFriendtechSharesFactoryTest is Test {
     /// @dev this will actually fail if eth is sent out of band, but we don't support that
     /// in the invariant handler so it won't try
     function invariant_alwaysZeroBalance() external {
-        assertEq(
-            address(wFTSFactory).balance,
-            0,
-            "balance of factory not 0"
-        );
+        assertEq(address(wFTSFactory).balance, 0, "balance of factory not 0");
     }
-
-    // function invariant_alwaysRedeemable() external payable {
-    //     vm.prank(eve);
-    //     wFTSFactory.sellShares(alice, 1);
-    // }
 
     // function invariant_alwaysEnoughETH() external payable {
     //     // factory always has enough eth if all held shares are sold

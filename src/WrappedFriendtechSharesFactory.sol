@@ -11,7 +11,7 @@ import {IFriendTechSharesV1} from "./external/IFriendTechSharesV1.sol";
 /// Holds an internal balance and mints / burns tokens
 /// @dev No owner, no permissioned functions
 /// @notice No fee on transfer but minting / burning are subject to fees set in friendTechSharesV1 contract
-contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1155 {
+contract WrappedFriendtechSharesFactory is ERC1155 {
     using SafeTransferLib for address;
 
     uint256 public lastId = 0;
@@ -108,4 +108,8 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
 
     /// @notice receive eth from sales of shares
     receive() external payable {}
+
+    fallback() external payable {
+        revert("WrappedFriendtechSharesFactory: no fallback");
+    }
 }
