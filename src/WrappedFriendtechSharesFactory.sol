@@ -106,5 +106,6 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
         emit URIChanged(id, tokenURIs[id]);
     }
 
+    /// @notice receive eth from sales of shares
     receive() external payable {}
 }

@@ -32,18 +32,18 @@ contract WrappedFriendtechSharesFactoryTest is Test {
 
         vm.deal(eve, 100 ether);
         // create mock shareSubjects
-        address[] memory shareSubjects = new address[](2);
+        address[] memory shareSubjects = new address[](3);
         shareSubjects[0] = alice;
         shareSubjects[1] = bob;
+        shareSubjects[2] = address(0xffff);
+
         aliceTokenId = wFTSFactory.createToken(alice);
         assertEq(aliceTokenId, 1);
         assertEq(wFTSFactory.subjectToTokenId(alice), 1);
         assertEq(wFTSFactory.tokenIdToSubject(1), alice);
 
         bobTokenId = wFTSFactory.createToken(bob);
-        assertEq(bobTokenId, 2);
-        assertEq(wFTSFactory.subjectToTokenId(bob), 2);
-        assertEq(wFTSFactory.tokenIdToSubject(2), bob);
+        wFTSFactory.createToken(address(0xffff));
 
         for (uint256 i = 0; i < shareSubjects.length; i++) {
             vm.deal(shareSubjects[i], 100 ether);
@@ -58,7 +58,7 @@ contract WrappedFriendtechSharesFactoryTest is Test {
         mockReentrant1155Receiver = new MockReentrant1155Receiver(alice);
         
         // set up invariant testing
-        handler = new Handler(address(wFTSFactory));
+        handler = new Handler(address(wFTSFactory), address(friendtechShares));
         targetContract(address(handler));
     }
 
@@ -67,6 +67,16 @@ contract WrappedFriendtechSharesFactoryTest is Test {
             wFTSFactory.sharesSupply(alice),
             friendtechShares.sharesSupply(alice),
             "internal accounting of share supply not le"
+        );
+    }
+
+    /// @dev this will actually fail if eth is sent out of band, but we don't support that
+    /// in the invariant handler so it won't try
+    function invariant_alwaysZeroBalance() external {
+        assertEq(
+            address(wFTSFactory).balance,
+            0,
+            "balance of factory not 0"
         );
     }
 
