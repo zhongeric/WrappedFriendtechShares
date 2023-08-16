@@ -1,5 +1,7 @@
 ## WrappedFriendtechShares
-A simple ERC1155 wrapper around shares of friend.tech
+A simple ERC1155 wrapper around shares of friend.tech.
+
+Now you can transfer shares to friends, use them in lending pools as collateral, and more :)
 
 ### Deploy on base
 
