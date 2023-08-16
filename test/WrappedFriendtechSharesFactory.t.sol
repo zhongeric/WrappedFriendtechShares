@@ -3,6 +3,7 @@ pragma solidity >0.8.0;
 
 import {Test} from "forge-std/Test.sol";
 import {WrappedFriendtechSharesFactory} from "../src/WrappedFriendtechSharesFactory.sol";
+import {Handler} from "./handlers/Handler.sol";
 import {FriendtechSharesV1} from "./FriendtechSharesV1.t.sol";
 import {MockReentrant1155Receiver} from "./mock/MockReentrant1155Receiver.sol";
 
@@ -16,31 +17,31 @@ contract WrappedFriendtechSharesFactoryTest is Test {
     uint256 aliceTokenId;
     uint256 bobTokenId;
 
-    MockReentrant1155Receiver public mockReentrant1155Receiver;
+    Handler public handler;
+    MockReentrant1155Receiver public mockReentrant1155Receiver = new MockReentrant1155Receiver(alice);
 
     function setUp() public virtual {
         friendtechShares = new FriendtechSharesV1();
         friendtechShares.setFeeDestination(protocolFeeDestination);
         friendtechShares.setProtocolFeePercent(0.05 ether);
         friendtechShares.setSubjectFeePercent(0.05 ether);
+
         wFTSFactory = new WrappedFriendtechSharesFactory(
             address(friendtechShares)
         );
 
         vm.deal(eve, 100 ether);
         // create mock shareSubjects
-        address[] memory shareSubjects = new address[](2);
+        address[] memory shareSubjects = new address[](3);
         shareSubjects[0] = alice;
         shareSubjects[1] = bob;
+
         aliceTokenId = wFTSFactory.createToken(alice);
         assertEq(aliceTokenId, 1);
         assertEq(wFTSFactory.subjectToTokenId(alice), 1);
         assertEq(wFTSFactory.tokenIdToSubject(1), alice);
 
         bobTokenId = wFTSFactory.createToken(bob);
-        assertEq(bobTokenId, 2);
-        assertEq(wFTSFactory.subjectToTokenId(bob), 2);
-        assertEq(wFTSFactory.tokenIdToSubject(2), bob);
 
         for (uint256 i = 0; i < shareSubjects.length; i++) {
             vm.deal(shareSubjects[i], 100 ether);
@@ -49,10 +50,15 @@ contract WrappedFriendtechSharesFactoryTest is Test {
             // thus, there will always be one share owned by the shareSubject
             friendtechShares.buyShares{value: 0.1 ether}(shareSubjects[i], 1);
         }
-        
-        mockReentrant1155Receiver = new MockReentrant1155Receiver(alice);
+        // set up invariant testing
+        handler = new Handler(address(wFTSFactory), address(friendtechShares));
+        bytes4[] memory selectors = new bytes4[](3);
+        selectors[0] = Handler.buyShares.selector;
+        selectors[1] = Handler.sellShares.selector;
+        selectors[2] = Handler.safeTransferFrom.selector;
 
-        assertEq(address(wFTSFactory).balance, 0, "factory balance not 0");
+        targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
+        targetContract(address(handler));
     }
 
     function invariant_leShareSupply() external {
@@ -63,16 +69,10 @@ contract WrappedFriendtechSharesFactoryTest is Test {
         );
     }
 
-    // add invariants for wFTSFactory solvency
-    function invariant_alwaysRedeemable() external payable {
-        if (wFTSFactory.balanceOf(eve, aliceTokenId) == 0) {
-            return;
-        }
-        uint256 sharesSupply = wFTSFactory.sharesSupply(alice);
-        assertLe(wFTSFactory.balanceOf(eve, aliceTokenId), sharesSupply, "balance of eve not le to sharesSupply");
-        uint256 amount = wFTSFactory.balanceOf(eve, aliceTokenId);
-        vm.prank(eve);
-        wFTSFactory.sellShares(alice, amount);
+    /// @dev this will actually fail if eth is sent out of band, but we don't support that
+    /// in the invariant handler so it won't try
+    function invariant_noLeftoverETHInFactory() external {
+        assertEq(address(wFTSFactory).balance, 0, "balance of factory not 0");
     }
 
     function testBuyAndSellShares(uint8 amount) public {

@@ -11,7 +11,7 @@ import {IFriendTechSharesV1} from "./external/IFriendTechSharesV1.sol";
 /// Holds an internal balance and mints / burns tokens
 /// @dev No owner, no permissioned functions
 /// @notice No fee on transfer but minting / burning are subject to fees set in friendTechSharesV1 contract
-contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1155 {
+contract WrappedFriendtechSharesFactory is ERC1155 {
     using SafeTransferLib for address;
 
     uint256 public lastId = 0;
@@ -89,6 +89,12 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
         msg.sender.safeTransferETH(amountOwed);
     }
 
+    /// @notice Burn ERC1155 tokens
+    /// @dev the corresponding shares held by this contract wil be unrecoverable
+    function burn(uint256 id, uint256 amount) external {
+        _burn(msg.sender, id, amount);
+    }
+
     /// @notice get the uri for a token by id
     /// @param id The token id
     function uri(uint256 id) public view override returns (string memory) {
@@ -106,5 +112,6 @@ contract WrappedFriendtechSharesFactory is IWrappedFriendtechSharesFactory, ERC1
         emit URIChanged(id, tokenURIs[id]);
     }
 
+    /// @notice receive eth from sales of shares
     receive() external payable {}
 }
