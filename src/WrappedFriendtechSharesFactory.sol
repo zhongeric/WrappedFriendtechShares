@@ -9,7 +9,7 @@ import {IFriendTechSharesV1} from "./external/IFriendTechSharesV1.sol";
 /// @title ERC1155 Token Issuer built ontop of friends.tech
 /// @author Eric Zhong
 /// Holds an internal balance and mints / burns tokens
-/// @dev No owner, no permissioned functions
+/// @dev No owner, non upgradable
 /// @notice No fee on transfer but minting / burning are subject to fees set in friendTechSharesV1 contract
 contract WrappedFriendtechSharesFactory is ERC1155 {
     using SafeTransferLib for address;
@@ -56,7 +56,7 @@ contract WrappedFriendtechSharesFactory is ERC1155 {
 
     /// @notice Buy shares in sharesSubject on friendsTech
     /// @notice this is subject to the set fee in the friendTechSharesV1 contract
-    /// @dev You must send msg.value greater than the getBuyPriceAfterFee
+    /// @dev You must send msg.value greater than or equal to the getBuyPriceAfterFee
     /// @param sharesSubject The address of the shares subject
     /// @param amount The amount of shares to buy
     function buyShares(address sharesSubject, uint256 amount) external payable reentrancyLock {
