@@ -3,7 +3,7 @@ pragma solidity >0.8.0;
 
 import {SafeTransferLib} from "solmate/src/utils/SafeTransferLib.sol";
 import {ERC1155} from "solmate/src/tokens/ERC1155.sol";
-import {IWrappedFriendtechSharesFactory} from "./interfaces/IWrappedFriendtechSharesFactory.sol";
+import {IWrappedFriendtechSharesFactory} from "./interfaces/WrappedFriendtechSharesFactory.sol";
 import {IFriendTechSharesV1} from "./external/IFriendTechSharesV1.sol";
 
 /// @title ERC1155 Token Issuer built ontop of friends.tech
